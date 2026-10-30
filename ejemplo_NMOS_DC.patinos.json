@@ -1,0 +1,110 @@
+{
+  "format": "digital-flow-v1",
+  "nodes": [
+    {
+      "id": "v1",
+      "type": "VDC",
+      "x": 150,
+      "y": 200,
+      "label": "v1",
+      "props": {
+        "voltage": 5
+      },
+      "state": 0
+    },
+    {
+      "id": "r1",
+      "type": "RESISTOR",
+      "x": 320,
+      "y": 160,
+      "label": "r1",
+      "props": {
+        "resistance": 1000
+      },
+      "state": 0
+    },
+    {
+      "id": "r2",
+      "type": "RESISTOR",
+      "x": 320,
+      "y": 300,
+      "label": "r2",
+      "props": {
+        "resistance": 10000
+      },
+      "state": 0
+    },
+    {
+      "id": "m1",
+      "type": "NMOS",
+      "x": 520,
+      "y": 220,
+      "label": "m1",
+      "props": {
+        "threshold": 2,
+        "transconductance": 0.002,
+        "channelLambda": 0.02
+      },
+      "state": 0
+    },
+    {
+      "id": "g1",
+      "type": "GND",
+      "x": 750,
+      "y": 300,
+      "label": "g1",
+      "props": {},
+      "state": 0
+    }
+  ],
+  "wires": [
+    {
+      "id": "w1",
+      "fromPin": 1,
+      "toPin": 0,
+      "from": "v1",
+      "to": "r1",
+      "input": 0
+    },
+    {
+      "id": "w2",
+      "fromPin": 1,
+      "toPin": 1,
+      "from": "r1",
+      "to": "m1",
+      "input": 0
+    },
+    {
+      "id": "w3",
+      "fromPin": 1,
+      "toPin": 0,
+      "from": "v1",
+      "to": "r2",
+      "input": 0
+    },
+    {
+      "id": "w4",
+      "fromPin": 1,
+      "toPin": 0,
+      "from": "r2",
+      "to": "m1",
+      "input": 0
+    },
+    {
+      "id": "w5",
+      "fromPin": 2,
+      "toPin": 0,
+      "from": "m1",
+      "to": "g1",
+      "input": 0
+    },
+    {
+      "id": "w6",
+      "fromPin": 0,
+      "toPin": 1,
+      "from": "v1",
+      "to": "g1",
+      "input": 0
+    }
+  ]
+}

@@ -28,6 +28,8 @@ public class MainActivity extends Activity {
     private static final int OPEN_WEB_FILE = 2403;
     private WebView web;
     private String pendingJson;
+    private String pendingFileName = "circuito.patinos.json";
+    private String pendingMime = "application/json";
     private ValueCallback<Uri[]> chooserCallback;
 
     @Override public void onCreate(Bundle state) {
@@ -36,7 +38,8 @@ public class MainActivity extends Activity {
         shell.setBackgroundColor(Color.rgb(8, 9, 10));
         web = new WebView(this);
         shell.addView(web, new FrameLayout.LayoutParams(-1, -1));
-        // Prevent edge-to-edge system bars from obscuring controls on Android 15+.
+        // Android 15+ draws edge-to-edge by default: keep app controls below
+        // the status bar and above gesture/navigation controls.
         if (Build.VERSION.SDK_INT >= 35) {
             shell.setOnApplyWindowInsetsListener((v, insets) -> {
                 Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
@@ -73,11 +76,26 @@ public class MainActivity extends Activity {
     public class NativeBridge {
         @JavascriptInterface public void saveJson(String json) {
             pendingJson = json;
+            pendingFileName = "circuito.patinos.json";
+            pendingMime = "application/json";
             runOnUiThread(() -> {
                 Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
                 i.addCategory(Intent.CATEGORY_OPENABLE);
-                i.setType("application/json");
-                i.putExtra(Intent.EXTRA_TITLE, "circuito.patinos.json");
+                i.setType(pendingMime);
+                i.putExtra(Intent.EXTRA_TITLE, pendingFileName);
+                startActivityForResult(i, SAVE_PROJECT);
+            });
+        }
+        @JavascriptInterface public void saveSpice(String text) {
+            if (text == null || text.length() > 4_000_000) return;
+            pendingJson = text;
+            pendingFileName = "patin-os.cir";
+            pendingMime = "text/plain";
+            runOnUiThread(() -> {
+                Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                i.addCategory(Intent.CATEGORY_OPENABLE);
+                i.setType(pendingMime);
+                i.putExtra(Intent.EXTRA_TITLE, pendingFileName);
                 startActivityForResult(i, SAVE_PROJECT);
             });
         }

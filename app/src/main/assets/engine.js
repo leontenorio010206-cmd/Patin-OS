@@ -20,7 +20,7 @@ const extras={
  REG_7805:'Regulador 7805',TIMER_555:'Temporizador 555',IC_7400:'CI 7400',IC_7404:'CI 7404',COUNTER_4017:'Contador 4017',
  SEVEN_SEG:'Display 7 segmentos',CRYSTAL:'Cristal',ANTENNA:'Antena',SOLAR:'Celda solar',VARISTOR:'Varistor',HALL:'Sensor Hall',MIC:'Micrófono',PUSH_PULL:'Driver push-pull'
  };
- for(const [type,name] of Object.entries(electronics))TYPES[type]={in:1,name,domain:'analog'};
+ for(const [type,name] of Object.entries(electronics))TYPES[type]={in:1,name,domain:'analog',pins:['NPN','PNP','NMOS','PMOS','OPAMP'].includes(type)?3:2};
  const PROPERTY_SCHEMAS={
   CLOCK:[['periodMs','Periodo','ms',1000,20,60000],['duty','Ciclo activo','%',50,1,99]],
   RESISTOR:[['resistance','Resistencia','Ω',1000,.1,1e9]], POT:[['resistance','Resistencia total','Ω',10000,1,1e9],['position','Posición','%',50,0,100]],
@@ -49,6 +49,11 @@ const extras={
   PHOTODIODE:[['forwardVoltage','Caída a 1 mA','V',.65,.1,5],['photoCurrent','Fotocorriente a 1000 lux','A',.0001,0,10],['illuminance','Iluminación','lux',1000,0,100000],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],
   VARISTOR:[['breakdown','Umbral aprox.','V',12,.2,1000],['knee','Suavidad de transición','V',.5,.05,10]],
   TVS_BIDIR:[['breakdown','Umbral bilateral','V',12,.2,1000],['knee','Suavidad de transición','V',.3,.05,10]],
+  NPN:[['beta','Ganancia aproximada β','',100,10,1000],['saturationCurrent','Corriente de saturación B-E','A',1e-14,1e-17,1e-10]],
+  PNP:[['beta','Ganancia aproximada β','',100,10,1000],['saturationCurrent','Corriente de saturación B-E','A',1e-14,1e-17,1e-10]],
+  NMOS:[['threshold','Tensión umbral Vth','V',2,.1,10],['transconductance','Parámetro KP','A/V²',.002,.000001,1],['channelLambda','Modulación de canal','1/V',.02,0,1]],
+  PMOS:[['threshold','Magnitud de Vth','V',2,.1,10],['transconductance','Parámetro KP','A/V²',.002,.000001,1],['channelLambda','Modulación de canal','1/V',.02,0,1]],
+  OPAMP:[['openLoopGain','Ganancia abierta idealizada','V/V',100,1,100000],['railVoltage','Riel virtual de saturación','V',12,.1,100]],
   RELAY:[['coilResistance','Resistencia bobina','Ω',120,1,1e8]],SOLAR:[['voltage','Voc nominal','V',6,0,1000]],VARISTOR:[['breakdown','Voltaje nominal','V',275,1,1e5]],CRYSTAL:[['frequency','Frecuencia','Hz',16000000,1,1e9]]
  };
  function defaultProps(type){return Object.fromEntries((PROPERTY_SCHEMAS[type]||[]).map(([key,,unit,def])=>[key,def]));}
@@ -135,12 +140,23 @@ const extras={
      if(!n||typeof n.id!=='string'||!/^[-_a-zA-Z0-9]{1,80}$/.test(n.id)||ids.has(n.id)||!TYPES[n.type]||!Number.isFinite(n.x)||!Number.isFinite(n.y)||Math.abs(n.x)>30000||Math.abs(n.y)>30000)throw Error('Componente inválido o repetido.');
      ids.add(n.id);return{id:n.id,type:n.type,x:n.x,y:n.y,label:String(n.label||TYPES[n.type].name).slice(0,32),state:n.state===1?1:0,props:cleanProps(n.type,n.props)};
    });
-   const occupied=new Set();const wires=[];
+   const occupied=new Set(),edgeSet=new Set(),wires=[],byId=new Map(nodes.map(n=>[n.id,n]));
    for(const w of raw.wires){
-     if(!w||!ids.has(w.from)||!ids.has(w.to)||['LED','OUT','PROBE'].includes(nodes.find(n=>n.id===w.from).type)||!Number.isInteger(w.input)||w.input<0||w.input>=TYPES[nodes.find(n=>n.id===w.to).type].in)throw Error('Cable inválido.');
-     if((TYPES[nodes.find(n=>n.id===w.from).type].domain==='analog') !== (TYPES[nodes.find(n=>n.id===w.to).type].domain==='analog'))throw Error('No conectes componentes analógicos a puertos digitales.');
-     const slot=w.to+':'+w.input;if(occupied.has(slot))throw Error('Dos cables en la misma entrada.');occupied.add(slot);
-     wires.push({id:typeof w.id==='string'&&/^[-_a-zA-Z0-9]{1,80}$/.test(w.id)?w.id:'w'+wires.length,from:w.from,to:w.to,input:w.input});
+     if(!w||!byId.has(w.from)||!byId.has(w.to))throw Error('Cable inválido.');
+     const a=byId.get(w.from),b=byId.get(w.to),aa=TYPES[a.type].domain==='analog',ba=TYPES[b.type].domain==='analog';
+     if(aa!==ba)throw Error('No conectes componentes analógicos a puertos digitales.');
+     if(aa){
+       const fromPin=Number.isInteger(w.fromPin)?w.fromPin:1;
+       const toPin=Number.isInteger(w.toPin)?w.toPin:0;
+       if(fromPin<0||fromPin>=TYPES[a.type].pins||toPin<0||toPin>=TYPES[b.type].pins ||(w.from===w.to&&fromPin===toPin))throw Error('Pin analógico inválido.');
+       const edge=[`${w.from}:${fromPin}`,`${w.to}:${toPin}`].sort().join('|');
+       if(edgeSet.has(edge))throw Error('Cable analógico duplicado.');edgeSet.add(edge);
+       wires.push({id:typeof w.id==='string'&&/^[-_a-zA-Z0-9]{1,80}$/.test(w.id)?w.id:'w'+wires.length,from:w.from,to:w.to,input:0,fromPin,toPin});
+     }else{
+       if(['LED','OUT','PROBE'].includes(a.type)||!Number.isInteger(w.input)||w.input<0||w.input>=TYPES[b.type].in)throw Error('Cable lógico inválido.');
+       const slot=w.to+':'+w.input;if(occupied.has(slot))throw Error('Dos cables en la misma entrada.');occupied.add(slot);
+       wires.push({id:typeof w.id==='string'&&/^[-_a-zA-Z0-9]{1,80}$/.test(w.id)?w.id:'w'+wires.length,from:w.from,to:w.to,input:w.input});
+     }
    }
    return {format:'digital-flow-v1',nodes,wires};
  }
