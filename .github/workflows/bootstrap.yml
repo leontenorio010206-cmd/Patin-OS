@@ -1,0 +1,61 @@
+name: Patiñ Os · Publicar fuentes y compilar APK
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/bootstrap.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recuperar fuentes verificadas
+        shell: bash
+        run: |
+          base64 -d .bootstrap/patin-os-source.tar.xz.b64 > /tmp/patin-os-source.tar.xz
+          echo "2bd84091d7fd70ad2453cfa5925d6b46454cc4cbfeac511ff9e6dce3c33a6af5  /tmp/patin-os-source.tar.xz" | sha256sum -c -
+          tar -xJf /tmp/patin-os-source.tar.xz
+          rm -rf .bootstrap
+          rm -f .github/workflows/bootstrap.yml
+          cat > .gitignore <<'EOF'
+          .gradle/
+          .idea/
+          build/
+          **/build/
+          local.properties
+          *.iml
+          EOF
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Probar lógica digital
+        run: node tests/engine.test.cjs
+      - name: Publicar fuentes legibles en el repositorio
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat: importar código Android Patiñ Os v0.2.1-alpha'
+          git push origin HEAD:main
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compilar APK debug
+        run: gradle --no-daemon :app:assembleDebug --stacktrace
+      - name: Publicar APK como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: Patin-OS-v0.2.1-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+          if-no-files-found: error
