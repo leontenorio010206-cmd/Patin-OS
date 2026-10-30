@@ -21,8 +21,11 @@ jobs:
       - name: Verificar herramientas Android del runner
         run: |
           echo "Android SDK: ${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
-          command -v sdkmanager
-          sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
+          SDKMGR="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)"
+          test -n "$SDKMGR"
+          echo "Usando $SDKMGR"
+          yes | "$SDKMGR" --sdk_root="$ANDROID_HOME" --licenses > /dev/null || true
+          "$SDKMGR" --sdk_root="$ANDROID_HOME" --install "platforms;android-35" "build-tools;35.0.0"
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
