@@ -12,8 +12,8 @@
  const categories={source:['SWITCH','CLOCK','CONST1','CONST0'],gate:['AND','OR','XOR','NOT','NAND','NOR','XNOR','BUF','AND3','OR3','XOR3','NAND3','NOR3','XNOR3','AND4','OR4','XOR4','NAND4','NOR4','XNOR4'],advanced:['MUX2','MAJ3','ADD_SUM','ADD_CARRY','PARITY3','EQ','IMPLIES'],output:['LED','OUT','PROBE']};
  Object.assign(categories,{
   passive:['RESISTOR','POT','LDR','NTC','PTC','CAP','CAP_POL','CAP_VARIABLE','INDUCTOR','CHOKE','TRANSFORMER','VARISTOR','CRYSTAL'],
-  supply:['VDC','VAC','BATTERY','CELL','ISOURCE','GND','JUNCTION','VCC','SOLAR'],
-  diode:['DIODE_SI','DIODE_GE','DIODE_SCHOTTKY','DIODE_ZENER','DIODE_TVS','DIODE_BRIDGE','LED_RED','LED_GREEN','LED_BLUE','LED_RGB','PHOTODIODE'],
+  supply:['VDC','VAC','VPULSE','VTRI','VSAW','IPULSE','BATTERY','CELL','ISOURCE','GND','JUNCTION','VCC','SOLAR'],
+  diode:['DIODE_SI','DIODE_GE','DIODE_FAST','DIODE_POWER','DIODE_SCHOTTKY','DIODE_ZENER','DIODE_TVS','TVS_BIDIR','DIODE_BRIDGE','LED_RED','LED_GREEN','LED_BLUE','LED_AMBER','LED_WHITE','LED_RGB','PHOTODIODE'],
   actuator:['BUZZER','PIEZO','SPEAKER','LAMP','MOTOR','RELAY','FUSE','SW_ANALOG','PUSH','SW_SPDT','SW_DIP'],
   measurement:['VOLTMETER','AMMETER','OHMMETER','OSCILLOSCOPE','HALL','MIC'],
   transistor:['NPN','PNP','NMOS','PMOS','SCR','TRIAC','OPAMP','REG_7805','TIMER_555','IC_7400','IC_7404','COUNTER_4017','SEVEN_SEG','ANTENNA','PUSH_PULL']
@@ -23,7 +23,7 @@
  const symbols={SWITCH:'⏻',CLOCK:'▁▔▁',CONST1:'1',CONST0:'0',AND:'&',OR:'≥1',XOR:'⊕',NOT:'¬',NAND:'⊼',NOR:'⊽',XNOR:'≡',BUF:'▷',LED:'◉',OUT:'→',PROBE:'⌖',AND3:'&₃',OR3:'≥₃',XOR3:'⊕₃',NAND3:'⊼₃',NOR3:'⊽₃',XNOR3:'≡₃',AND4:'&₄',OR4:'≥₄',XOR4:'⊕₄',NAND4:'⊼₄',NOR4:'⊽₄',XNOR4:'≡₄',MUX2:'MUX',MAJ3:'≥2',ADD_SUM:'Σ',ADD_CARRY:'C',PARITY3:'P',EQ:'=',IMPLIES:'⇒'};
  const labels={SWITCH:'Entrada',CLOCK:'Reloj',CONST1:'HIGH',CONST0:'LOW',AND:'AND',OR:'OR',XOR:'XOR',NOT:'NOT',NAND:'NAND',NOR:'NOR',XNOR:'XNOR',BUF:'Buffer',LED:'LED',OUT:'Salida',PROBE:'Sonda',AND3:'AND 3',OR3:'OR 3',XOR3:'XOR 3',NAND3:'NAND 3',NOR3:'NOR 3',XNOR3:'XNOR 3',AND4:'AND 4',OR4:'OR 4',XOR4:'XOR 4',NAND4:'NAND 4',NOR4:'NOR 4',XNOR4:'XNOR 4',MUX2:'MUX 2:1',MAJ3:'Mayoría',ADD_SUM:'Suma Σ',ADD_CARRY:'Acarreo',PARITY3:'Paridad',EQ:'A = B',IMPLIES:'A ⇒ B'};
  const analogSymbols={RESISTOR:'▰',POT:'↗',LDR:'☀',NTC:'ϑ',PTC:'ϑ',CAP:'┃┃',CAP_POL:'┃)',CAP_VARIABLE:'↗',INDUCTOR:'∿',CHOKE:'∿',TRANSFORMER:'∿∿',VARISTOR:'V',CRYSTAL:'◇',
- VDC:'⎓',VAC:'∿',BATTERY:'▮',CELL:'▯',ISOURCE:'↑',GND:'⏚',JUNCTION:'●',VCC:'V+',SOLAR:'☀',DIODE_SI:'▷|',DIODE_GE:'▷|',DIODE_SCHOTTKY:'▷⊢',DIODE_ZENER:'▷┤',DIODE_TVS:'▷|',DIODE_BRIDGE:'◇',LED_RED:'◉',LED_GREEN:'◉',LED_BLUE:'◉',LED_RGB:'◉',PHOTODIODE:'↙',
+ VDC:'⎓',VAC:'∿',VPULSE:'▁▔▁',VTRI:'△',VSAW:'⩘',IPULSE:'↥',BATTERY:'▮',CELL:'▯',ISOURCE:'↑',GND:'⏚',JUNCTION:'●',VCC:'V+',SOLAR:'☀',DIODE_FAST:'▷|',DIODE_POWER:'▷|',TVS_BIDIR:'⇵',LED_AMBER:'◉',LED_WHITE:'◉',DIODE_SI:'▷|',DIODE_GE:'▷|',DIODE_SCHOTTKY:'▷⊢',DIODE_ZENER:'▷┤',DIODE_TVS:'▷|',DIODE_BRIDGE:'◇',LED_RED:'◉',LED_GREEN:'◉',LED_BLUE:'◉',LED_RGB:'◉',PHOTODIODE:'↙',
  BUZZER:'♫',PIEZO:'♫',SPEAKER:'◀',LAMP:'⊗',MOTOR:'Ⓜ',RELAY:'◫',FUSE:'─',SW_ANALOG:'╱',PUSH:'⎍',SW_SPDT:'⤴',SW_DIP:'╱',VOLTMETER:'Ⓥ',AMMETER:'Ⓐ',OHMMETER:'Ω',OSCILLOSCOPE:'〰',HALL:'H',MIC:'🎙',NPN:'N',PNP:'P',NMOS:'N',PMOS:'P',SCR:'S',TRIAC:'T',OPAMP:'△',REG_7805:'5V',TIMER_555:'555',IC_7400:'7400',IC_7404:'7404',COUNTER_4017:'4017',SEVEN_SEG:'8',ANTENNA:'⋔',PUSH_PULL:'⇄'};
  for(const [type,def] of Object.entries(TYPES))if(def.domain==='analog'){labels[type]=def.name;symbols[type]=analogSymbols[type]||'◇';}
  const escapeHtml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -94,8 +94,13 @@
    return `<path class="gate-body" d="${d}"/>${more}${bubble}`;
  }
  function propBrief(n){const p=n.props||{};if(n.type==='CLOCK')return `${p.periodMs||1000} ms`;
+   if(n.type==='LDR')return `${Math.round(p.illuminance||10)} lux · R10 ${p.resistance} Ω`;
+   if(['NTC','PTC'].includes(n.type))return `${p.temperature??25} °C · R25 ${p.resistance} Ω`;
+   if(n.type==='SOLAR')return `${p.irradiance??1000} W/m² · ${(p.photoCurrent||.1)*1000} mA`;
+   if(n.type==='PHOTODIODE')return `${p.illuminance??1000} lux · ${(p.photoCurrent||.0001)*1000} mA`;
+   if(['VPULSE','IPULSE'].includes(n.type))return `${p.frequency} Hz · ${p.duty}%`;
    if('resistance' in p)return `${Number(p.resistance).toLocaleString('es-MX')} Ω`;
-   if('voltage' in p)return n.type==='VAC'?`${p.voltage} Vp · ${p.frequency||50} Hz`:`${p.voltage} V`;
+   if('voltage' in p)return ['VAC','VTRI','VSAW'].includes(n.type)?`${p.voltage} Vp · ${p.frequency||50} Hz`:`${p.voltage} V`;
    if('capacitance' in p)return `${p.capacitance} µF`;
    if('inductance' in p)return `${p.inductance} mH`;
    if('forwardVoltage' in p)return `Vf ${p.forwardVoltage} V${p.reverse?' · ↶':''}`;
@@ -115,16 +120,16 @@
   }
   else if(['CAP','CAP_POL','CAP_VARIABLE'].includes(t)){core=sym(line(`M ${x-6} ${y-25} v 50 M ${x+6} ${y-25} v 50`));if(t==='CAP_VARIABLE')core+=line(`M ${x-22} ${y+22} L ${x+20} ${y-22}`);if(t==='CAP_POL')core+=`<text x="${x-20}" y="${y-14}" class="component-mini">+</text>`;}
   else if(['INDUCTOR','CHOKE','TRANSFORMER'].includes(t))core=sym(line(`M ${x-26} ${y} c 0 -18 12 -18 12 0 c 0 -18 12 -18 12 0 c 0 -18 12 -18 12 0 c 0 -18 12 -18 12 0`));
-  else if(['DIODE_SI','DIODE_GE','DIODE_SCHOTTKY','DIODE_ZENER','DIODE_TVS','LED_RED','LED_GREEN','LED_BLUE','LED_RGB','PHOTODIODE'].includes(t)){
+  else if(['DIODE_SI','DIODE_GE','DIODE_FAST','DIODE_POWER','DIODE_SCHOTTKY','DIODE_ZENER','DIODE_TVS','TVS_BIDIR','LED_RED','LED_GREEN','LED_BLUE','LED_WHITE','LED_AMBER','LED_RGB','PHOTODIODE'].includes(t)){
     core=sym(`<path class="component-line" d="M ${x-23} ${y-19} L ${x+13} ${y} L ${x-23} ${y+19} Z"/>`+line(`M ${x+13} ${y-21} V ${y+21}`));
     if(t.startsWith('LED_'))core+=line(`M ${x+6} ${y-24} l 13 -11 m-3 0 l 4 -2 m-3 7 l 4 1 M ${x+18} ${y-16} l 13 -11`);
     if(t==='DIODE_GE')core+=`<text x="${x}" y="${y+34}" class="component-mini">Ge</text>`;
     if(t==='DIODE_ZENER')core+=line(`M ${x+13} ${y-21} l 7 0 M ${x+13} ${y+21} l -7 0`);
     if(t==='DIODE_SCHOTTKY')core+=line(`M ${x+13} ${y-21} l 7 0 v 7 M ${x+13} ${y+21} h -7 v -7`);
   }
-  else if(['VDC','VAC','BATTERY','CELL','ISOURCE','SOLAR','VCC'].includes(t)){
+  else if(['VDC','VAC','VPULSE','VTRI','VSAW','IPULSE','BATTERY','CELL','ISOURCE','SOLAR','VCC'].includes(t)){
     core=sym(`<circle cx="${x}" cy="${y}" r="27" class="component-shell"/>`);
-    core+=`<text x="${x}" y="${y+8}" class="component-letter">${t==='VAC'?'~':t==='ISOURCE'?'↑':t==='SOLAR'?'☀':t==='VDC'?'⎓':t==='VCC'?'V+':'±'}</text>`;
+    core+=`<text x="${x}" y="${y+8}" class="component-letter">${['VAC','VTRI','VSAW'].includes(t)?'~':['ISOURCE','IPULSE'].includes(t)?'↑':t==='VPULSE'?'▁▔':t==='SOLAR'?'☀':t==='VDC'?'⎓':t==='VCC'?'V+':'±'}</text>`;
   }
   else if(t==='GND')core=sym(line(`M ${x} ${y-24} V ${y+13} M ${x-22} ${y+13} H ${x+22} M ${x-15} ${y+20} H ${x+15} M ${x-7} ${y+27} H ${x+7}`));
   else if(t==='JUNCTION')core=sym(`<circle cx="${x}" cy="${y}" r="9" fill="#f6f6f6"/>`);
@@ -221,7 +226,7 @@
    makeField('label','Nombre',node.label,'text',null,null);
    for(const [key,label,unit,def,min,max] of (PROPERTY_SCHEMAS[node.type]||[]))makeField(key,label,node.props?.[key]??def,unit==='boolean'?'boolean':'number',min,max,unit==='boolean'?'':unit);
    if(!PROPERTY_SCHEMAS[node.type]?.length){const hint=document.createElement('p');hint.textContent='Este componente todavía no tiene parámetros eléctricos; puedes cambiar su nombre y posición.';fields.appendChild(hint);}
-   $('propsHelp').textContent=TYPES[node.type].domain==='analog'?(SUPPORTED.has(node.type)?'Modelo MNA educativo: tensión, corriente y potencia aproximadas. Resistencias y fuentes ideales; RC/RL en transitorio y diodos no lineales. No sustituye a SPICE ni a una medida real.':'Este componente está disponible para esquemas; su comportamiento físico aún no se simula.'):'Componente lógico: modifica sus propiedades y comprueba las señales.';
+   $('propsHelp').textContent=TYPES[node.type].domain==='analog'?(SUPPORTED.has(node.type)?'Modelo educativo: MNA, diodos estáticos, RC/RL y modelos simplificados de temperatura/luz; no incluye tolerancias, disipación térmica ni dinámica de dispositivos complejos. No sustituye a SPICE.':'Este componente está disponible para esquemas; su comportamiento físico aún no se simula.'):'Componente lógico: modifica sus propiedades y comprueba las señales.';
    dialog.dataset.node=node.id;dialog.showModal();
  }
  $('propsForm').addEventListener('submit',e=>{e.preventDefault();const node=nodes.find(n=>n.id===$('propsDialog').dataset.node);if(!node)return;
@@ -399,7 +404,7 @@
  board.addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY>0?1.12:.88);},{passive:false});
  function drawTools(){const query=$('toolSearch').value.toLocaleLowerCase('es').trim(),cat=$('toolCategory').value;
   const types=(cat==='all'?buttonTypes:categories[cat]).filter(t=>(labels[t]+' '+t).toLocaleLowerCase('es').includes(query));
-  $('tools').innerHTML=types.length?types.map(t=>`<button class="tool" data-type="${t}" title="Añadir ${labels[t]}"><span class="glyph">${symbols[t]}</span><span>${labels[t]}</span></button>`).join(''):'<span class="empty-tools">Sin resultados</span>';
+  $('tools').innerHTML=types.length?types.map(t=>{const kind=TYPES[t].domain==='analog'?(SUPPORTED.has(t)?'Física':'Esquema'):'Lógica';return `<button class="tool" data-type="${t}" title="Añadir ${labels[t]} · ${kind}"><span class="glyph">${symbols[t]}</span><span>${labels[t]}</span><small class="model-type ${kind==='Esquema'?'pending':''}">${kind}</small></button>`;}).join(''):'<span class="empty-tools">Sin resultados</span>';
  }
  $('toolSearch').oninput=drawTools;$('toolCategory').onchange=drawTools;drawTools();
  $('tools').addEventListener('click',e=>{const t=e.target.closest('[data-type]');if(t)addTool(t.dataset.type);});

@@ -1,0 +1,44 @@
+{
+  "format": "digital-flow-v1",
+  "nodes": [
+    {
+      "id": "pv",
+      "type": "SOLAR",
+      "x": 130,
+      "y": 280,
+      "label": "SOLAR",
+      "state": 0,
+      "props": {
+        "photoCurrent": 0.1,
+        "irradiance": 1000,
+        "forwardVoltage": 0.52,
+        "shuntResistance": 10000
+      }
+    },
+    {
+      "id": "r",
+      "type": "RESISTOR",
+      "x": 380,
+      "y": 280,
+      "label": "RESISTOR",
+      "state": 0,
+      "props": {
+        "resistance": 10
+      }
+    }
+  ],
+  "wires": [
+    {
+      "id": "w0",
+      "from": "pv",
+      "to": "r",
+      "input": 0
+    },
+    {
+      "id": "w1",
+      "from": "r",
+      "to": "pv",
+      "input": 0
+    }
+  ]
+}

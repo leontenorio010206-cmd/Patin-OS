@@ -73,7 +73,7 @@ test('v0.4: 34 components, 4-input project and bad pins are guarded',()=>{
 
 test('v0.5: property defaults, edits and JSON round-trip',()=>{
  const {TYPES,defaultProps,cleanProps}=require('../app/src/main/assets/engine.js');
- assert.equal(Object.keys(TYPES).length,99);
+ assert.ok(Object.keys(TYPES).length>=99);
  assert.equal(defaultProps('CLOCK').periodMs,1000);
  assert.equal(cleanProps('RESISTOR',{resistance:2200}).resistance,2200);
  assert.equal(cleanProps('RESISTOR',{resistance:-2}).resistance,1000);
@@ -157,4 +157,64 @@ test('v0.6 safety: physical unsupported device is not falsely simulated; high sh
  assert.equal(o.fault,true);
 });
 
+
+
+const A7=require('../app/src/main/assets/analog.js');
+const E7=require('../app/src/main/assets/engine.js');
+const a7=(id,type,props={})=>({...n(id,type),props:{...E7.defaultProps(type),...props}});
+const circuit7=(parts,time=0)=>A7.simulateAnalog(parts,parts.map((p,i)=>({from:p.id,to:parts[(i+1)%parts.length].id,input:0})),time);
+const near7=(actual,expected,tolerance=.00001)=>assert.ok(Math.abs(actual-expected)<tolerance,`${actual} != ${expected}`);
+test('v0.7: 108 components, new editable physical defaults',()=>{
+ assert.equal(Object.keys(E7.TYPES).length,108);
+ for(const t of ['VPULSE','VTRI','VSAW','IPULSE','DIODE_FAST','DIODE_POWER','LED_AMBER','LED_WHITE','TVS_BIDIR','SOLAR','VARISTOR','PHOTODIODE']){
+  assert.equal(A7.SUPPORTED.has(t),true,t+' no tiene modelo');
+  assert.equal(E7.validateProject({format:'digital-flow-v1',nodes:[a7('x',t)],wires:[]}).nodes.length,1);
+ }
+});
+test('v0.7: beta NTC, linear PTC and LDR illumination',()=>{
+ const nt=a7('nt','NTC',{temperature:25}),pt=a7('pt','PTC',{temperature:75}),ldr=a7('lr','LDR',{illuminance:10,gamma:1,resistance:10000});
+ near7(A7.resistance(nt),10000);nt.props.temperature=70;assert.ok(A7.resistance(nt)<2500);
+ near7(A7.resistance(pt),1350);near7(A7.resistance(ldr),10000);ldr.props.illuminance=100;near7(A7.resistance(ldr),1000);
+});
+test('v0.7: voltage pulse switches high and low by duty cycle',()=>{
+ const v=a7('v','VPULSE',{low:1,high:9,frequency:2,duty:25}),r=a7('r','RESISTOR',{resistance:1000});
+ near7(circuit7([v,r],.05).readings.get('r').current,.009);near7(circuit7([v,r],.2).readings.get('r').current,.001);
+});
+test('v0.7: triangular and sawtooth waveforms',()=>{
+ for(const [type,time,voltage] of [['VTRI',0,-5],['VTRI',.5,5],['VSAW',.25,-2.5],['VSAW',.75,2.5]]){
+  const v=a7('v',type,{voltage:5,frequency:1}),r=a7('r','RESISTOR',{resistance:1000});
+  near7(circuit7([v,r],time).readings.get('r').voltage,voltage,.001);
+ }
+});
+test('v0.7: pulsed current source',()=>{
+ const v=a7('v','IPULSE',{low:.002,high:.012,frequency:1,duty:25}),r=a7('r','RESISTOR',{resistance:100});
+ near7(circuit7([v,r],.1).readings.get('r').current,.012);
+ near7(circuit7([v,r],.5).readings.get('r').current,.002);
+});
+test('v0.7: solar cell load power and irradiance',()=>{
+ const pv=a7('pv','SOLAR',{photoCurrent:.1,irradiance:1000}),r=a7('r','RESISTOR',{resistance:10});
+ const light=circuit7([pv,r]);assert.ok(light.readings.get('r').power>0&&light.readings.get('pv').power<0);
+ pv.props.irradiance=100;
+ assert.ok(circuit7([pv,r]).readings.get('r').current<light.readings.get('r').current);
+});
+test('v0.7: photodiode photocurrent versus darkness',()=>{
+ const pd=a7('pd','PHOTODIODE',{illuminance:1000,photoCurrent:.0001}),r=a7('r','RESISTOR',{resistance:1000});
+ assert.ok(Math.abs(circuit7([pd,r]).readings.get('r').current)>.00005);
+ pd.props.illuminance=0;assert.ok(Math.abs(circuit7([pd,r]).readings.get('r').current)<1e-7);
+});
+test('v0.7: bidirectional varistor clamps both polarities',()=>{
+ const v=a7('v','VDC',{voltage:18}),r=a7('r','RESISTOR',{resistance:1000}),s=a7('s','VARISTOR',{breakdown:12,knee:.5});
+ const pos=circuit7([v,r,s]).readings.get('s').voltage;assert.ok(pos>12&&pos<15);
+ v.props.voltage=-18;const neg=circuit7([v,r,s]).readings.get('s').voltage;assert.ok(neg< -12&&neg> -15);
+});
+test('v0.7: TVS bilateral and TVS unidirectional',()=>{
+ const v=a7('v','VDC',{voltage:20}),r=a7('r','RESISTOR',{resistance:1000}),s=a7('s','TVS_BIDIR',{breakdown:12,knee:.3});
+ assert.ok(circuit7([v,r,s]).readings.get('s').voltage<16);
+ v.props.voltage=-20;assert.ok(circuit7([v,r,s]).readings.get('s').voltage> -16);
+ v.props.voltage=20;const z=a7('z','DIODE_TVS',{breakdown:12,reverse:true});
+ assert.ok(circuit7([v,r,z]).readings.get('z').current>.001);
+});
+test('v0.7: advanced multi-terminal chips are schematic-only',()=>{
+ for(const t of ['NPN','PNP','NMOS','PMOS','TRANSFORMER','OPAMP','TIMER_555','DIODE_BRIDGE'])assert.equal(A7.SUPPORTED.has(t),false);
+});
 console.log(`PASS: ${count} grupos de pruebas`);

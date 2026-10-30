@@ -1,0 +1,43 @@
+{
+  "format": "digital-flow-v1",
+  "nodes": [
+    {
+      "id": "v",
+      "type": "VDC",
+      "x": 130,
+      "y": 280,
+      "label": "VDC",
+      "state": 0,
+      "props": {
+        "voltage": 5
+      }
+    },
+    {
+      "id": "r",
+      "type": "LDR",
+      "x": 380,
+      "y": 280,
+      "label": "LDR",
+      "state": 0,
+      "props": {
+        "resistance": 10000,
+        "illuminance": 100,
+        "gamma": 0.8
+      }
+    }
+  ],
+  "wires": [
+    {
+      "id": "w0",
+      "from": "v",
+      "to": "r",
+      "input": 0
+    },
+    {
+      "id": "w1",
+      "from": "r",
+      "to": "v",
+      "input": 0
+    }
+  ]
+}

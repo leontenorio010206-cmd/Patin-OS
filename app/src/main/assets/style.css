@@ -69,3 +69,8 @@ svg{shape-rendering:geometricPrecision;text-rendering:geometricPrecision}
 /* Voltaje y corriente físicos calculados de las ramas de MNA. */
 .component-reading{font:9px system-ui,sans-serif;fill:#48ff98;text-anchor:middle;pointer-events:none;}
 @media(max-width:630px){.component-reading{font-size:9px}}
+
+/* v0.7: visible model support state on every catalog item. */
+.tool .model-type{font-size:9px;letter-spacing:.045em;color:#42ef93;text-transform:uppercase;line-height:1.2;white-space:nowrap;font-weight:600}
+.tool .model-type.pending{color:#e6c185}
+@media(max-width:630px){.tool .model-type{font-size:8px}.tool{min-height:108px}}

@@ -1,0 +1,59 @@
+{
+  "format": "digital-flow-v1",
+  "nodes": [
+    {
+      "id": "v",
+      "type": "VDC",
+      "x": 130,
+      "y": 280,
+      "label": "VDC",
+      "state": 0,
+      "props": {
+        "voltage": 18
+      }
+    },
+    {
+      "id": "r",
+      "type": "RESISTOR",
+      "x": 380,
+      "y": 280,
+      "label": "RESISTOR",
+      "state": 0,
+      "props": {
+        "resistance": 1000
+      }
+    },
+    {
+      "id": "t",
+      "type": "TVS_BIDIR",
+      "x": 630,
+      "y": 280,
+      "label": "TVS_BIDIR",
+      "state": 0,
+      "props": {
+        "breakdown": 12,
+        "knee": 0.3
+      }
+    }
+  ],
+  "wires": [
+    {
+      "id": "w0",
+      "from": "v",
+      "to": "r",
+      "input": 0
+    },
+    {
+      "id": "w1",
+      "from": "r",
+      "to": "t",
+      "input": 0
+    },
+    {
+      "id": "w2",
+      "from": "t",
+      "to": "v",
+      "input": 0
+    }
+  ]
+}

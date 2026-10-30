@@ -1,4 +1,4 @@
-/* Patiñ Os electrical core v0.6: Modified Nodal Analysis with backward-Euler
+/* Patiñ Os electrical core v0.7: Modified Nodal Analysis with backward-Euler
  * capacitor/inductor companions and Newton linearization of Shockley diodes.
  * Teaching tool, NOT a verified SPICE implementation. SI units internally.
  */
@@ -7,12 +7,13 @@
  const {TYPES}=root.DigitalEngine||(typeof module!=='undefined'&&module.exports?require('./engine.js'):{TYPES:{}});
  const RSET=new Set(['RESISTOR','POT','LDR','NTC','PTC','LAMP','BUZZER','PIEZO','SPEAKER','MOTOR','FUSE','SW_ANALOG','PUSH','SW_DIP','AMMETER','VOLTMETER']);
  const IDEAL=new Set(['GND','JUNCTION']);
+ const VARS=new Set(['VARISTOR','TVS_BIDIR']);
  const CSET=new Set(['CAP','CAP_POL','CAP_VARIABLE']);
  const LSET=new Set(['INDUCTOR','CHOKE']);
- const VSOURCE=new Set(['VDC','BATTERY','CELL','VAC']);
- const DIODES=new Set(['DIODE_SI','DIODE_GE','DIODE_SCHOTTKY','LED_RED','LED_GREEN','LED_BLUE','DIODE_ZENER']);
- const CURRENT=new Set(['ISOURCE']);
- const SUPPORTED=new Set([...RSET,...IDEAL,...CSET,...LSET,...VSOURCE,...DIODES,...CURRENT]);
+ const VSOURCE=new Set(['VDC','BATTERY','CELL','VAC','VCC','VPULSE','VTRI','VSAW']);
+ const DIODES=new Set(['DIODE_SI','DIODE_GE','DIODE_SCHOTTKY','LED_RED','LED_GREEN','LED_BLUE','LED_WHITE','LED_AMBER','DIODE_FAST','DIODE_POWER','DIODE_ZENER','DIODE_TVS','PHOTODIODE']);
+ const CURRENT=new Set(['ISOURCE','IPULSE']);
+ const SUPPORTED=new Set([...RSET,...IDEAL,...CSET,...LSET,...VSOURCE,...DIODES,...CURRENT,...VARS,'SOLAR']);
  const LINEAR=new Set([...RSET,...IDEAL,...CSET,...LSET]);
  const SUPPLY=new Set(VSOURCE);
  const DIODE=new Set(DIODES);
@@ -26,9 +27,30 @@
    if(n.type==='SW_ANALOG'||n.type==='PUSH'||n.type==='SW_DIP')return n.props?.closed===true?0.01:1e12;
    if(n.type==='FUSE')return .03;
    if(n.type==='POT')return Math.max(.01,number(n,'resistance',10000)*number(n,'position',50)/100);
+   if(n.type==='LDR')return Math.max(.01,Math.min(1e12,number(n,'resistance',10000)*Math.pow(10/number(n,'illuminance',10),number(n,'gamma',.8))));
+   if(n.type==='NTC')return Math.max(.01,Math.min(1e12,number(n,'resistance',10000)*Math.exp(number(n,'beta',3950)*(1/(number(n,'temperature',25)+273.15)-1/298.15))));
+   if(n.type==='PTC')return Math.max(.01,number(n,'resistance',1000)*(1+number(n,'coefficient',.007)*(number(n,'temperature',25)-25)));
    return Math.max(.001,number(n,'resistance',n.type==='LAMP'?100:n.type==='MOTOR'?50:n.type==='BUZZER'?200:1000));
  }
- function sourceVoltage(n,t){return n.type==='VAC'?number(n,'voltage',12)*Math.sin(2*Math.PI*number(n,'frequency',50)*t+number(n,'phase',0)*Math.PI/180):number(n,'voltage',n.type==='CELL'?1.5:n.type==='BATTERY'?9:5);}
+ const fraction=(n,t)=>((t*number(n,'frequency',1)+number(n,'phase',0)/360)%1+1)%1;
+ function sourceVoltage(n,t){
+   if(n.type==='VAC')return number(n,'voltage',12)*Math.sin(2*Math.PI*number(n,'frequency',50)*t+number(n,'phase',0)*Math.PI/180);
+   const phase=fraction(n,t);
+   if(n.type==='VPULSE')return phase<number(n,'duty',50)/100?number(n,'high',5):number(n,'low',0);
+   if(n.type==='VTRI')return number(n,'offset',0)+number(n,'voltage',5)*(1-4*Math.abs(phase-.5));
+   if(n.type==='VSAW')return number(n,'offset',0)+number(n,'voltage',5)*(2*phase-1);
+   return number(n,'voltage',n.type==='CELL'?1.5:n.type==='BATTERY'?9:5);
+ }
+ function sourceCurrent(n,t){return n.type==='IPULSE'?(fraction(n,t)<number(n,'duty',50)/100?number(n,'high',.01):number(n,'low',0)):number(n,'current',.005);}
+ const photoCurrent=n=>number(n,'photoCurrent',.0001)*number(n,'illuminance',1000)/1000;
+ const solarCurrent=n=>number(n,'photoCurrent',.1)*number(n,'irradiance',1000)/1000;
+ function surgeIV(n,v){
+   const breakdown=number(n,'breakdown',12),knee=number(n,'knee',.5);
+   const magnitude=Math.abs(v),d=Math.min(25,(magnitude-breakdown)/knee),exp=Math.exp(d);
+   const extra=1e-3*exp,i=Math.sign(v)*extra+v*1e-9,g=extra/knee+1e-9;
+   return{i,g};
+ }
+
  function gaussian(M,rhs){
    const n=rhs.length,A=M.map((r,i)=>r.concat(rhs[i]));
    for(let i=0;i<n;i++){
@@ -47,11 +69,11 @@
    const is=.001/(Math.exp(Math.min(100,drop/vt))-1); // Vf at reference 1 mA
    const e=Math.exp(Math.min(100,Math.max(-100,v/vt)));
    const i=is*(e-1),g=Math.max(1e-12,Math.min(1e4,is*e/vt));
-   if(n.type==='DIODE_ZENER'){
+   if(n.type==='DIODE_ZENER'||n.type==='DIODE_TVS'){
      const bv=number(n,'breakdown',5.1);const rev=Math.exp(Math.min(30,Math.max(-30,(-v-bv)/.06)));
      return {i:i-1e-8*(rev-1),g:g+1e-8*rev/.06};
    }
-   return {i,g};
+   return {i:n.type==='PHOTODIODE'?i-photoCurrent(n):i,g};
  }
  const keyOf=(nodes,wires)=>JSON.stringify([nodes.filter(n=>TYPES[n.type]?.domain==='analog').map(n=>[n.id,n.type,n.props]),wires.map(w=>[w.from,w.to,w.input])]);
  function simulateAnalog(nodes,wires,timeSeconds=0,previous=null){
@@ -67,7 +89,7 @@
      for(const n of analog)readings.set(n.id,{supported:SUPPORTED.has(n.type),voltage:null,current:null,power:null,active:false});
      return{readings,warnings,voltageStatus:status,state:null,fault:false};
    };
-   if(!valid.some(n=>VSOURCE.has(n.type)||CURRENT.has(n.type)))return fallback('Sin fuente eléctrica');
+   if(!valid.some(n=>VSOURCE.has(n.type)||CURRENT.has(n.type)||n.type==='SOLAR'||n.type==='PHOTODIODE'))return fallback('Sin fuente eléctrica');
    const parent=new Map(),find=k=>{if(parent.get(k)!==k)parent.set(k,find(parent.get(k)));return parent.get(k);};
    const union=(a,b)=>{const x=find(a),y=find(b);if(x!==y)parent.set(y,x);};
    for(const n of analog){parent.set(n.id+':L',n.id+':L');parent.set(n.id+':R',n.id+':R');}
@@ -87,8 +109,8 @@
    const memories=reset?new Map():new Map(previous.memory);
    const old=reset?null:previous.solution;
    const elapsed=reset?.001:Math.max(.00001,Math.min(.20,timeSeconds-previous.time));
-   const acFreq=Math.max(0,...valid.filter(n=>n.type==='VAC').map(n=>number(n,'frequency',50)));
-   const transient=valid.some(n=>CSET.has(n.type)||LSET.has(n.type)||n.type==='VAC');
+   const acFreq=Math.max(0,...valid.filter(n=>['VAC','VPULSE','VTRI','VSAW','IPULSE'].includes(n.type)).map(n=>number(n,'frequency',50)));
+   const transient=valid.some(n=>CSET.has(n.type)||LSET.has(n.type)||['VAC','VPULSE','VTRI','VSAW','IPULSE'].includes(n.type));
    const slices=transient?Math.max(1,Math.min(36,Math.ceil(elapsed/Math.min(.015,acFreq?1/(24*acFreq):.015)))):1;
    if(acFreq&&elapsed/slices*acFreq>.15)warnings.push('Frecuencia AC elevada: baja velocidad/escala temporal para resolver con precisión.');
    const dt=elapsed/slices;
@@ -119,12 +141,20 @@
            const coil=memories.get(n.id)||{v:0,i:0},g=dt/indH(n);
            stamp(l,r,g,coil.i);
          }
+         if(VARS.has(n.type)){
+           const vd=getV(x,l)-getV(x,r),d=surgeIV(n,vd);stamp(l,r,d.g,d.i-d.g*vd);
+         }
+         if(n.type==='SOLAR'){
+           const vd=getV(x,r)-getV(x,l),d=diodeIV(n,vd);
+           stamp(l,r,1/number(n,'shuntResistance',10000),solarCurrent(n));
+           stamp(r,l,d.g,d.i-d.g*vd);
+         }
          if(DIODES.has(n.type)){
            const a=reverse(n)?r:l,c=reverse(n)?l:r;
            const vd=getV(x,a)-getV(x,c),d=diodeIV(n,vd);
            stamp(a,c,d.g,d.i-d.g*vd);
          }
-         if(CURRENT.has(n.type))stamp(l,r,0,number(n,'current',.005));
+         if(CURRENT.has(n.type))stamp(l,r,0,sourceCurrent(n,t));
        }
        sources.forEach((n,i)=>{const [l,r]=terminals(n),col=other.length+i,positive=ix(r),negative=ix(l);
          put(positive,col,1);put(col,positive,1);put(negative,col,-1);put(col,negative,-1);b[col]=sourceVoltage(n,t);
@@ -134,6 +164,11 @@
        let fraction=1;
        for(const n of valid){if(!DIODES.has(n.type))continue;
          const [l,r]=terminals(n),a=reverse(n)?r:l,c=reverse(n)?l:r;
+         const dv=(getV(nx,a)-getV(nx,c))-(getV(x,a)-getV(x,c));
+         if(Math.abs(dv)>.18)fraction=Math.min(fraction,.18/Math.abs(dv));
+       }
+       for(const n of valid){if(!VARS.has(n.type)&&n.type!=='SOLAR')continue;
+         const [l,r]=terminals(n),a=n.type==='SOLAR'?r:l,c=n.type==='SOLAR'?l:r;
          const dv=(getV(nx,a)-getV(nx,c))-(getV(x,a)-getV(x,c));
          if(Math.abs(dv)>.18)fraction=Math.min(fraction,.18/Math.abs(dv));
        }
@@ -159,7 +194,9 @@
      let i=0;
      if(RSET.has(n.type))i=v/resistance(n);
      else if(CSET.has(n.type)||LSET.has(n.type)||VSOURCE.has(n.type))i=lastBranch.get(n.id)||0;
-     else if(CURRENT.has(n.type))i=number(n,'current',.005);
+     else if(CURRENT.has(n.type))i=sourceCurrent(n,timeSeconds);
+     else if(n.type==='SOLAR'){const d=diodeIV(n,-v);i=solarCurrent(n)+v/number(n,'shuntResistance',10000)-d.i;}
+     else if(VARS.has(n.type))i=surgeIV(n,v).i;
      else if(DIODES.has(n.type)){const d=diodeIV(n,reverse(n)?-v:v);i=(reverse(n)?-1:1)*d.i;}
      const power=v*i;
      const active=n.type==='BUZZER'?Math.abs(v)>=number(n,'threshold',3)&&Math.abs(i)>.00001:
@@ -169,8 +206,11 @@
      if(n.type==='FUSE'&&Math.abs(i)>number(n,'rating',1))warnings.push(`Fusible ${n.label}: corriente calculada supera su valor nominal; NO se abre automáticamente.`);
      readings.set(n.id,{supported:true,current:i,voltage:v,power,active});
    }
+   if(valid.some(n=>['BUZZER','PIEZO','SPEAKER','LAMP','MOTOR'].includes(n.type)))warnings.push('Los actuadores/altavoces son cargas resistivas equivalentes: no se predice sonido, giro, temperatura ni dinámica mecánica.');
+   if(valid.some(n=>n.type==='SOLAR'))warnings.push('Celda solar: modelo fotocorriente + diodo/shunt idealizado, sin curva calibrada ni efecto térmico.');
+   if(valid.some(n=>['DIODE_TVS','DIODE_POWER','DIODE_FAST'].includes(n.type)))warnings.push('Diodos: modelo estático sin recuperación inversa, capacitancia parásita ni límite térmico.');
    if(fault)warnings.push('Posible cortocircuito o sobrecarga: corriente/potencia excesiva en el modelo ideal.');
-   return {readings,warnings,voltageStatus:'MNA DC + transitorios RC/RL + diodos',state:{key,time:timeSeconds,solution:solved,memory:memories},fault};
+   return {readings,warnings,voltageStatus:'MNA: RC/RL, diodos, luz, temperatura y fuentes periódicas',state:{key,time:timeSeconds,solution:solved,memory:memories},fault};
  }
  const api={simulateAnalog,LINEAR,SUPPLY,DIODE,SUPPORTED,resistance,sourceVoltage};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;

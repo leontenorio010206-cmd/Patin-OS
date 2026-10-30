@@ -1,0 +1,61 @@
+{
+  "format": "digital-flow-v1",
+  "nodes": [
+    {
+      "id": "v",
+      "type": "VPULSE",
+      "x": 130,
+      "y": 280,
+      "label": "VPULSE",
+      "state": 0,
+      "props": {
+        "low": 0,
+        "high": 5,
+        "frequency": 2,
+        "duty": 50
+      }
+    },
+    {
+      "id": "r",
+      "type": "RESISTOR",
+      "x": 380,
+      "y": 280,
+      "label": "RESISTOR",
+      "state": 0,
+      "props": {
+        "resistance": 1000
+      }
+    },
+    {
+      "id": "c",
+      "type": "CAP",
+      "x": 630,
+      "y": 280,
+      "label": "CAP",
+      "state": 0,
+      "props": {
+        "capacitance": 100
+      }
+    }
+  ],
+  "wires": [
+    {
+      "id": "w0",
+      "from": "v",
+      "to": "r",
+      "input": 0
+    },
+    {
+      "id": "w1",
+      "from": "r",
+      "to": "c",
+      "input": 0
+    },
+    {
+      "id": "w2",
+      "from": "c",
+      "to": "v",
+      "input": 0
+    }
+  ]
+}

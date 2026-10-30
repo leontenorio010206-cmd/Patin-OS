@@ -9,9 +9,9 @@ const extras={
  };Object.assign(TYPES,extras);
  const electronics={
  RESISTOR:'Resistencia',POT:'Potenciómetro',LDR:'Fotoresistencia',NTC:'Termistor NTC',PTC:'Termistor PTC',
- DIODE_SI:'Diodo silicio',DIODE_GE:'Diodo germanio',DIODE_SCHOTTKY:'Diodo Schottky',DIODE_ZENER:'Diodo Zener',DIODE_TVS:'Diodo TVS',DIODE_BRIDGE:'Puente rectificador',
- LED_RED:'LED rojo',LED_GREEN:'LED verde',LED_BLUE:'LED azul',LED_RGB:'LED RGB',PHOTODIODE:'Fotodiodo',
- VDC:'Fuente DC',VAC:'Fuente AC',BATTERY:'Batería',CELL:'Pila',ISOURCE:'Fuente de corriente',GND:'Tierra',JUNCTION:'Unión',VCC:'VCC',
+ DIODE_FAST:'Diodo rápido',DIODE_POWER:'Diodo rectificador 1N400x',DIODE_SI:'Diodo silicio',DIODE_GE:'Diodo germanio',DIODE_SCHOTTKY:'Diodo Schottky',DIODE_ZENER:'Diodo Zener',DIODE_TVS:'Diodo TVS',DIODE_BRIDGE:'Puente rectificador',
+ LED_WHITE:'LED blanco',LED_AMBER:'LED ámbar',TVS_BIDIR:'TVS bidireccional',LED_RED:'LED rojo',LED_GREEN:'LED verde',LED_BLUE:'LED azul',LED_RGB:'LED RGB',PHOTODIODE:'Fotodiodo',
+ VDC:'Fuente DC',VAC:'Fuente AC',VPULSE:'Fuente de pulso',VTRI:'Fuente triangular',VSAW:'Fuente diente de sierra',IPULSE:'Corriente pulsada',BATTERY:'Batería',CELL:'Pila',ISOURCE:'Fuente de corriente',GND:'Tierra',JUNCTION:'Unión',VCC:'VCC',
  CAP:'Capacitor',CAP_POL:'Electrolítico',CAP_VARIABLE:'Capacitor variable',INDUCTOR:'Inductor',CHOKE:'Choque',TRANSFORMER:'Transformador',
  BUZZER:'Buzzer',PIEZO:'Piezoeléctrico',SPEAKER:'Altavoz',LAMP:'Lámpara',MOTOR:'Motor DC',RELAY:'Relé',FUSE:'Fusible',
  SW_ANALOG:'Interruptor eléctrico',PUSH:'Pulsador',SW_SPDT:'Conmutador',SW_DIP:'DIP switch',
@@ -24,12 +24,20 @@ const extras={
  const PROPERTY_SCHEMAS={
   CLOCK:[['periodMs','Periodo','ms',1000,20,60000],['duty','Ciclo activo','%',50,1,99]],
   RESISTOR:[['resistance','Resistencia','Ω',1000,.1,1e9]], POT:[['resistance','Resistencia total','Ω',10000,1,1e9],['position','Posición','%',50,0,100]],
-  LDR:[['resistance','Resistencia equivalente','Ω',1000,1,1e9]],NTC:[['resistance','R a temperatura actual','Ω',10000,1,1e9]],PTC:[['resistance','R a temperatura actual','Ω',1000,1,1e9]],
+  LDR:[['resistance','R a 10 lux','Ω',10000,1,1e9],['illuminance','Iluminación','lux',10,.01,100000],['gamma','Exponente de luz','',.8,.1,2.5]],
+  NTC:[['resistance','R a 25 °C','Ω',10000,1,1e9],['temperature','Temperatura','°C',25,-40,180],['beta','Constante B','K',3950,500,10000]],
+  PTC:[['resistance','R a 25 °C','Ω',1000,1,1e9],['temperature','Temperatura','°C',25,-40,180],['coefficient','Coeficiente térmico','1/°C',.007,0,.1]],
+  DIODE_FAST:[['forwardVoltage','Caída directa de referencia (1 mA)','V',.65,.1,3],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],DIODE_POWER:[['forwardVoltage','Caída directa de referencia (1 mA)','V',.72,.1,3],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],
   DIODE_SI:[['forwardVoltage','Caída directa aproximada','V',.7,.1,5],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],DIODE_GE:[['forwardVoltage','Caída directa aproximada','V',.3,.1,2],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],DIODE_SCHOTTKY:[['forwardVoltage','Caída directa aproximada','V',.25,.05,3],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],
+  LED_WHITE:[['forwardVoltage','Caída directa a 1 mA','V',3.1,.2,10],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],LED_AMBER:[['forwardVoltage','Caída directa a 1 mA','V',2.05,.2,10],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],
   LED_RED:[['forwardVoltage','Caída directa','V',1.9,.2,10],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],LED_GREEN:[['forwardVoltage','Caída directa','V',2.2,.2,10],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],LED_BLUE:[['forwardVoltage','Caída directa','V',3,.2,10],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],
   VDC:[['voltage','Voltaje DC','V',5,-1000,1000]],BATTERY:[['voltage','Voltaje','V',9,.1,1000]],CELL:[['voltage','Voltaje','V',1.5,.1,50]],
   VAC:[['voltage','Voltaje pico','V',12,0,1000],['frequency','Frecuencia','Hz',50,.1,100000],['phase','Fase','°',0,-360,360]],
-  ISOURCE:[['current','Corriente','A',.005,-100,100]],CAP:[['capacitance','Capacitancia','µF',10,.001,1e6]],CAP_POL:[['capacitance','Capacitancia','µF',100,.001,1e6]],CAP_VARIABLE:[['capacitance','Capacitancia','µF',1,.001,1e6]],
+  VCC:[['voltage','Voltaje ideal (R respecto L)','V',5,-1000,1000]],
+  VPULSE:[['low','Nivel bajo','V',0,-1000,1000],['high','Nivel alto','V',5,-1000,1000],['frequency','Frecuencia','Hz',2,.01,200000],['duty','Ciclo activo','%',50,1,99],['phase','Fase','°',0,-360,360]],
+  VTRI:[['voltage','Amplitud pico','V',5,0,1000],['offset','Offset DC','V',0,-1000,1000],['frequency','Frecuencia','Hz',1,.01,200000],['phase','Fase','°',0,-360,360]],
+  VSAW:[['voltage','Amplitud pico','V',5,0,1000],['offset','Offset DC','V',0,-1000,1000],['frequency','Frecuencia','Hz',1,.01,200000],['phase','Fase','°',0,-360,360]],
+  ISOURCE:[['current','Corriente','A',.005,-100,100]],IPULSE:[['low','Corriente baja','A',0,-100,100],['high','Corriente alta','A',.01,-100,100],['frequency','Frecuencia','Hz',1,.01,200000],['duty','Ciclo activo','%',50,1,99]],CAP:[['capacitance','Capacitancia','µF',10,.001,1e6]],CAP_POL:[['capacitance','Capacitancia','µF',100,.001,1e6]],CAP_VARIABLE:[['capacitance','Capacitancia','µF',1,.001,1e6]],
   INDUCTOR:[['inductance','Inductancia','mH',10,.001,1e6]],CHOKE:[['inductance','Inductancia','mH',100,.001,1e6]],TRANSFORMER:[['ratio','Relación (Np:Ns)','',2,.01,1000]],
   BUZZER:[['resistance','Resistencia equivalente','Ω',200,1,1e6],['threshold','Umbral visual','V',3,.1,100]],PIEZO:[['resistance','Carga equivalente','Ω',5000,1,1e9]],SPEAKER:[['resistance','Impedancia nominal aprox.','Ω',8,1,10000]],
   LAMP:[['resistance','Resistencia simplificada','Ω',100,.1,1e8]],MOTOR:[['resistance','Resistencia de carga','Ω',50,.1,1e8]],FUSE:[['rating','Corriente nominal','A',1,.001,1000]],
@@ -37,6 +45,10 @@ const extras={
   SW_ANALOG:[['closed','Cerrado','boolean',true,0,1]],PUSH:[['closed','Pulsado','boolean',false,0,1]],SW_DIP:[['closed','Cerrado','boolean',true,0,1]],SW_SPDT:[['position','Posición','',1,1,2]],
   DIODE_ZENER:[['breakdown','Voltaje Zener','V',5.1,.2,1000],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],DIODE_TVS:[['breakdown','Umbral TVS','V',12,.2,1000]],
   REG_7805:[['outputVoltage','Voltaje nominal','V',5,0,100]],TIMER_555:[['frequency','Frecuencia prevista','Hz',1,.001,1e6]],
+  SOLAR:[['photoCurrent','Fotocorriente a 1000 W/m²','A',.1,0,100],['irradiance','Irradiancia','W/m²',1000,0,2000],['forwardVoltage','Caída de diodo de celda a 1 mA','V',.52,.05,2],['shuntResistance','Resistencia de fuga','Ω',10000,1,1e9]],
+  PHOTODIODE:[['forwardVoltage','Caída a 1 mA','V',.65,.1,5],['photoCurrent','Fotocorriente a 1000 lux','A',.0001,0,10],['illuminance','Iluminación','lux',1000,0,100000],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],
+  VARISTOR:[['breakdown','Umbral aprox.','V',12,.2,1000],['knee','Suavidad de transición','V',.5,.05,10]],
+  TVS_BIDIR:[['breakdown','Umbral bilateral','V',12,.2,1000],['knee','Suavidad de transición','V',.3,.05,10]],
   RELAY:[['coilResistance','Resistencia bobina','Ω',120,1,1e8]],SOLAR:[['voltage','Voc nominal','V',6,0,1000]],VARISTOR:[['breakdown','Voltaje nominal','V',275,1,1e5]],CRYSTAL:[['frequency','Frecuencia','Hz',16000000,1,1e9]]
  };
  function defaultProps(type){return Object.fromEntries((PROPERTY_SCHEMAS[type]||[]).map(([key,,unit,def])=>[key,def]));}
