@@ -8,7 +8,7 @@
  const svgNS='http://www.w3.org/2000/svg';
  const board=$('board');const stage=$('stage');const nodesLayer=$('nodesLayer');const wiresLayer=$('wiresLayer');const overlay=$('overlayLayer');const fxLayer=$('fxLayer');
  let nodes=[],wires=[],seq=100,selected=null,scopeId=null,history=[],pendingWire=null,pendingInput=null,gesture=null,deleteMode=false,running=true,clockState=0,clockTime=0;
- let view={x:0,y:0,w:1160,h:650};let lastState={outs:new Map(),stable:true,conflict:false};let analogState={readings:new Map(),warnings:[]};const trace=[];
+ let view={x:0,y:0,w:1160,h:650};let lastState={outs:new Map(),stable:true,conflict:false};let analogState={readings:new Map(),warnings:[],state:null,fault:false};let analogFaultAt=0;const trace=[];
  const categories={source:['SWITCH','CLOCK','CONST1','CONST0'],gate:['AND','OR','XOR','NOT','NAND','NOR','XNOR','BUF','AND3','OR3','XOR3','NAND3','NOR3','XNOR3','AND4','OR4','XOR4','NAND4','NOR4','XNOR4'],advanced:['MUX2','MAJ3','ADD_SUM','ADD_CARRY','PARITY3','EQ','IMPLIES'],output:['LED','OUT','PROBE']};
  Object.assign(categories,{
   passive:['RESISTOR','POT','LDR','NTC','PTC','CAP','CAP_POL','CAP_VARIABLE','INDUCTOR','CHOKE','TRANSFORMER','VARISTOR','CRYSTAL'],
@@ -98,7 +98,7 @@
    if('voltage' in p)return n.type==='VAC'?`${p.voltage} Vp · ${p.frequency||50} Hz`:`${p.voltage} V`;
    if('capacitance' in p)return `${p.capacitance} µF`;
    if('inductance' in p)return `${p.inductance} mH`;
-   if('forwardVoltage' in p)return `Vf ${p.forwardVoltage} V`;
+   if('forwardVoltage' in p)return `Vf ${p.forwardVoltage} V${p.reverse?' · ↶':''}`;
    if('frequency' in p)return `${p.frequency} Hz`;
    return TYPES[n.type]?.domain==='analog'?(SUPPORTED.has(n.type)?'Modelo básico':'Sólo esquema'):'';
  }
@@ -139,6 +139,7 @@
   else if(t==='FUSE')core=sym(`<rect x="${x-27}" y="${y-10}" width="54" height="20" class="component-shell"/>`);
   else if(t==='VOLTMETER'||t==='AMMETER'||t==='OHMMETER')core=sym(`<circle cx="${x}" cy="${y}" r="26" class="component-shell"/><text x="${x}" y="${y+8}" class="component-letter">${t==='VOLTMETER'?'V':t==='AMMETER'?'A':'Ω'}</text>`);
   else core=sym(box(({NPN:'NPN',PNP:'PNP',NMOS:'NMOS',PMOS:'PMOS',OPAMP:'OP',TIMER_555:'555',REG_7805:'7805'})[t]||t.replace(/_/g,' ').slice(0,6)));
+  if(n.props?.reverse && (t.startsWith('DIODE_')||t.startsWith('LED_')))core=`<g transform="translate(${2*x} 0) scale(-1 1)">${core}</g>`;
   return core;
  }
  function nodeSvg(n,value){
@@ -173,17 +174,18 @@
      ports+=`<line class="pin-lead" x1="${pin.x}" y1="${pin.y}" x2="${n.x-(led?32:37)}" y2="${pin.y}"/><circle class="port-hit" data-kind="in" data-node="${n.id}" data-input="${i}" cx="${pin.x}" cy="${pin.y}" r="20"/><circle class="port in" cx="${pin.x}" cy="${pin.y}" r="8.5" style="fill:${analog?(reading?.supported?(reading?.active?'#42ef85':'#969da4'):'#efc36a'):pinColor(iv)}"/>`;
    }
    if(!led)ports+=`<line class="pin-lead" x1="${n.x+43}" y1="${n.y}" x2="${n.x+52}" y2="${n.y}"/><circle class="port-hit" data-kind="out" data-node="${n.id}" cx="${n.x+52}" cy="${n.y}" r="20"/><circle class="port out" cx="${n.x+52}" cy="${n.y}" r="8.5" style="fill:${analog?(reading?.supported?(reading?.active?'#42ef85':'#969da4'):'#efc36a'):color}"/>`;
+   const readingText=analog?(reading?.supported&&reading?.voltage!==null?`${(reading.current*1000).toFixed(2)} mA · ${reading.voltage.toFixed(2)} V`:'sin modelo/medición'):'';
    return `<g class="node-group ${selected===n.id?'selected':''}" data-node="${n.id}" data-kind="node">
-      ${body}<text class="gate-caption" x="${n.x}" y="${n.y+53}">${title}</text><text class="component-properties" x="${n.x}" y="${n.y+68}">${escapeHtml(propBrief(n))}</text>${ports}</g>`;
+      <rect data-kind="node" data-node="${n.id}" x="${n.x-43}" y="${n.y-43}" width="86" height="132" fill="transparent" pointer-events="all"/>${body}<text class="gate-caption" x="${n.x}" y="${n.y+53}">${title}</text><text class="component-properties" x="${n.x}" y="${n.y+68}">${escapeHtml(propBrief(n))}</text>${analog?`<text class="component-reading" x="${n.x}" y="${n.y+83}">${readingText}</text>`:''}${ports}</g>`;
  }
  function wirePath(a,b){const c=Math.max(50,Math.abs(b.x-a.x)*.38);return`M ${a.x} ${a.y} C ${a.x+c} ${a.y}, ${b.x-c} ${b.y}, ${b.x} ${b.y}`;}
  function render(){board.setAttribute('viewBox',`${view.x} ${view.y} ${view.w} ${view.h}`);
   const nodeMap=new Map(nodes.map(n=>[n.id,n]));let html='';
   for(const w of wires){const a=nodeMap.get(w.from),b=nodeMap.get(w.to);if(!a||!b)continue;
-   const d=wirePath(posOutput(a),posInput(b,w.input));const analog=TYPES[a.type]?.domain==='analog';const report=analogState.readings.get(a.id);const v=analog?(report?.active?1:report?.supported?0:null):lastState.outs.get(a.id);
+   const d=wirePath(posOutput(a),posInput(b,w.input));const analog=TYPES[a.type]?.domain==='analog';const report=analogState.readings.get(a.id);const v=analog?(report?.supported && report?.current!=null?(Math.abs(report.current)>1e-6?1:0):null):lastState.outs.get(a.id);
    html+=`<g data-kind="wire" data-wire="${w.id}"><path class="wire-back ${deleteMode?'wire-delete':''}" d="${d}"/>
    <path class="${v===1?'wire-energized':v===0?'wire-low':'wire-open'}" d="${d}"/>
-   ${v===1?`<path class="flow-chevron" d="M -9 -6 L 0 0 L -9 6"><animateMotion dur="1.8s" rotate="auto" repeatCount="indefinite" path="${d}"/></path>`:''}</g>`;
+   ${v===1?`<path class="flow-chevron" d="M -9 -6 L 0 0 L -9 6"><animateMotion dur="1.8s" rotate="auto" repeatCount="indefinite" ${analog&&report?.current<0?'keyPoints="1;0" keyTimes="0;1" calcMode="linear"':''} path="${d}"/></path>`:''}</g>`;
   }
   if(lastWireMarkup!==html){wiresLayer.innerHTML=html;lastWireMarkup=html;}
   nodesLayer.innerHTML=nodes.map(n=>nodeSvg(n,lastState.outs.get(n.id))).join('');
@@ -194,7 +196,7 @@
   $('hint').textContent=deleteMode?'Modo borrar: toca un cable o componente':pendingWire?'Arrastra o toca una entrada para conectar':pendingInput?'Toca una salida para conectar':'Arrastra para cablear · Mantén presionado para propiedades';
  }
  let mousePreview=null,lastWireMarkup=null;
- function refresh(){lastState=simulate(nodes,wires,clockState,performance.now());analogState=simulateAnalog(nodes,wires,performance.now()/1000);render();refreshScopeSelect();drawScope();
+ function refresh(){lastState=simulate(nodes,wires,clockState,performance.now());analogState=simulateAnalog(nodes,wires,performance.now()/1000,analogState.state);render();refreshScopeSelect();drawScope();
   if(!lastState.stable)showMessage('Oscilación detectada: ciclo sin estabilizar');refreshAnalogStatus();
  }
  function refreshAnalogStatus(){const e=$('analogStatus');if(!e)return;
@@ -203,7 +205,7 @@
   e.hidden=false;
   const selectedNode=nodes.find(n=>n.id===selected&&TYPES[n.type]?.domain==='analog');
   const report=selectedNode?analogState.readings.get(selectedNode.id):null;
-  const currentText=report?.supported&&report.current!==null?` · ${Math.abs(report.current*1000).toFixed(3)} mA · ${Math.abs(report.voltage).toFixed(3)} V`:' · modelo pendiente o sin circuito cerrado';
+  const currentText=report?.supported&&report.current!==null?` · I=${(report.current*1000).toFixed(3)} mA · V=${report.voltage.toFixed(3)} V · P=${(report.power*1000).toFixed(3)} mW`:' · modelo pendiente o sin solución';
   e.textContent=`⚡ ${analogState.voltageStatus} · ${analogs.length} piezas eléctricas${selectedNode?` · ${selectedNode.label}${currentText}`:''}${analogState.warnings.length?' · ⚠ '+analogState.warnings.join(' '):''}`;
  }
  function openProps(node){if(!node)return;
@@ -219,7 +221,7 @@
    makeField('label','Nombre',node.label,'text',null,null);
    for(const [key,label,unit,def,min,max] of (PROPERTY_SCHEMAS[node.type]||[]))makeField(key,label,node.props?.[key]??def,unit==='boolean'?'boolean':'number',min,max,unit==='boolean'?'':unit);
    if(!PROPERTY_SCHEMAS[node.type]?.length){const hint=document.createElement('p');hint.textContent='Este componente todavía no tiene parámetros eléctricos; puedes cambiar su nombre y posición.';fields.appendChild(hint);}
-   $('propsHelp').textContent=TYPES[node.type].domain==='analog'?(SUPPORTED.has(node.type)?'Modelo eléctrico simplificado, no sustituye un simulador SPICE.':'Este componente está disponible para esquemas; su comportamiento físico aún no se simula.'):'Componente lógico: modifica sus propiedades y comprueba las señales.';
+   $('propsHelp').textContent=TYPES[node.type].domain==='analog'?(SUPPORTED.has(node.type)?'Modelo MNA educativo: tensión, corriente y potencia aproximadas. Resistencias y fuentes ideales; RC/RL en transitorio y diodos no lineales. No sustituye a SPICE ni a una medida real.':'Este componente está disponible para esquemas; su comportamiento físico aún no se simula.'):'Componente lógico: modifica sus propiedades y comprueba las señales.';
    dialog.dataset.node=node.id;dialog.showModal();
  }
  $('propsForm').addEventListener('submit',e=>{e.preventDefault();const node=nodes.find(n=>n.id===$('propsDialog').dataset.node);if(!node)return;
@@ -238,16 +240,22 @@
   if(nodes.some(n=>n.id===scopeId))s.value=scopeId;else{scopeId=nodes[0]?.id||null;s.value=scopeId||'';}
   if(s.value!==previous)trace.length=0;
  }
- function drawScope(){const v=lastState.outs.get(scopeId);const values=trace.length?trace:[v];
+ function drawScope(){
+  const analog=TYPES[nodes.find(n=>n.id===scopeId)?.type]?.domain==='analog';
+  const v=analog?analogState.readings.get(scopeId)?.voltage:lastState.outs.get(scopeId);
+  const values=trace.length?trace:[v];const valid=values.filter(Number.isFinite);
+  const maxV=analog?Math.max(1,Math.ceil(Math.max(0,...valid.map(x=>Math.abs(x))))):1;
+  const minV=analog?-maxV:0;
   let out='';for(let y of [27,62,97])out+=`<line x1="0" y1="${y}" x2="920" y2="${y}" stroke="#343638" stroke-dasharray="5 7"/>`;
   for(let x=0;x<920;x+=92)out+=`<line x1="${x}" y1="3" x2="${x}" y2="113" stroke="#292b2d"/>`;
-  out+=`<text x="7" y="19" fill="#44f58b" font-size="11">1</text><text x="7" y="111" fill="#aaaeb1" font-size="11">0</text>`;
-  const coords=[];const width=894,ox=26,step=width/119;
-  values.forEach((v,i)=>{const x=ox+(i+(120-values.length))*step,y=v===1?28:v===0?99:63;
-    if(!coords.length)coords.push(`M ${x} ${y}`);else{const prevY=values[i-1]===1?28:values[i-1]===0?99:63;coords.push(`L ${x} ${prevY} L ${x} ${y}`);}
+  out+=`<text x="7" y="19" fill="#44f58b" font-size="11">${analog?maxV+'V':'1'}</text><text x="7" y="111" fill="#aaaeb1" font-size="11">${analog?minV+'V':'0'}</text>`;
+  const coords=[],width=894,ox=26,step=width/119;
+  const plotY=val=>Number.isFinite(val)?99-71*(val-minV)/(maxV-minV):63;
+  values.forEach((val,i)=>{const x=ox+(i+(120-values.length))*step,y=plotY(val);
+    if(!coords.length)coords.push(`M ${x} ${y}`);else coords.push(`L ${x} ${plotY(values[i-1])} L ${x} ${y}`);
   });
   out+=`<path d="${coords.join(' ')}" stroke="#36f0ab" stroke-width="2.4" fill="none" stroke-linejoin="round"/>`;
-  const last=v===1?'HIGH · 1':v===0?'LOW · 0':'SIN SEÑAL';$('scopeState').textContent=last;
+  $('scopeState').textContent=analog?(Number.isFinite(v)?`${v.toFixed(3)} V`:'SIN MODELO'):v===1?'HIGH · 1':v===0?'LOW · 0':'SIN SEÑAL';
   $('scopeLayer').innerHTML=out;
  }
  function addTool(type){
@@ -407,10 +415,11 @@
  setInterval(()=>{
   if(!running)return;
   const now=performance.now();if(now-clockTime>=500){clockState=1-clockState;clockTime=now;}
-  const nextState=simulate(nodes,wires,clockState,now);const nextAnalog=simulateAnalog(nodes,wires,now/1000);const currentFingerprint=JSON.stringify([...nextAnalog.readings.values()].map(r=>[r.active,Math.round((r.current||0)*10000)]));const priorFingerprint=JSON.stringify([...analogState.readings.values()].map(r=>[r.active,Math.round((r.current||0)*10000)]));analogState=nextAnalog;
+  const nextState=simulate(nodes,wires,clockState,now);const nextAnalog=simulateAnalog(nodes,wires,now/1000,analogState.state);const currentFingerprint=JSON.stringify([...nextAnalog.readings.values()].map(r=>[r.active,Math.round((r.current||0)*10000),Math.round((r.voltage||0)*1000)]));const priorFingerprint=JSON.stringify([...analogState.readings.values()].map(r=>[r.active,Math.round((r.current||0)*10000),Math.round((r.voltage||0)*1000)]));analogState=nextAnalog;
   const changed=nodes.some(n=>nextState.outs.get(n.id)!==lastState.outs.get(n.id));lastState=nextState;
-  trace.push(lastState.outs.get(scopeId)??null);if(trace.length>120)trace.shift();
-  if(changed||currentFingerprint!==priorFingerprint)render();drawScope();refreshAnalogStatus();
+  trace.push(TYPES[nodes.find(n=>n.id===scopeId)?.type]?.domain==='analog'?(analogState.readings.get(scopeId)?.voltage??null):(lastState.outs.get(scopeId)??null));if(trace.length>120)trace.shift();
+  if((changed||currentFingerprint!==priorFingerprint)&&!gesture)render();drawScope();refreshAnalogStatus();
+  if(nextAnalog.fault && now-analogFaultAt>5000){analogFaultAt=now;const n=nodes.find(n=>Math.abs(nextAnalog.readings.get(n.id)?.current||0)>20);if(n)sparks(n.x,n.y,'⚠ Posible cortocircuito/sobrecarga: revisa el circuito');}
   if(!nextState.stable && (!window.lastFaultAt || performance.now()-window.lastFaultAt>3500)){
     window.lastFaultAt=performance.now();const n=nodes.find(n=>TYPES[n.type].in>0);
     if(n)sparks(n.x,n.y,'Circuito sin estabilizar: revisa la realimentación');

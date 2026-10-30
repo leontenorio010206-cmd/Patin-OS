@@ -65,3 +65,7 @@ svg{shape-rendering:geometricPrecision;text-rendering:geometricPrecision}
 .property-field input:focus,.property-field select:focus{outline:2px solid #46ef8d;border-color:#46ef8d}
 .props-actions{display:flex;gap:12px;justify-content:flex-end;margin-top:18px}.props-actions button{min-height:44px;padding:8px 15px;border:1px solid #656a6e;background:#252728;color:#f9f9f9;border-radius:9px}.props-actions .props-save{background:#41f486;border-color:#41f486;color:#07150d;font-weight:700}
 @media(max-width:630px){.canvas-controls #editBtn{font-size:17px}.canvas-controls #editBtn span{display:none}.tool-controls select{width:128px}.tool{min-width:98px}.props-dialog{padding:17px}.analog-status{font-size:10px;max-height:68px}}
+
+/* Voltaje y corriente físicos calculados de las ramas de MNA. */
+.component-reading{font:9px system-ui,sans-serif;fill:#48ff98;text-anchor:middle;pointer-events:none;}
+@media(max-width:630px){.component-reading{font-size:9px}}

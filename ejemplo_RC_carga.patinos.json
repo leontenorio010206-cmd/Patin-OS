@@ -1,0 +1,58 @@
+{
+  "format": "digital-flow-v1",
+  "nodes": [
+    {
+      "id": "p0",
+      "type": "VDC",
+      "x": 180,
+      "y": 220,
+      "label": "5 V",
+      "state": 0,
+      "props": {
+        "voltage": 5
+      }
+    },
+    {
+      "id": "p1",
+      "type": "RESISTOR",
+      "x": 380,
+      "y": 220,
+      "label": "1 kΩ",
+      "state": 0,
+      "props": {
+        "resistance": 1000
+      }
+    },
+    {
+      "id": "p2",
+      "type": "CAP",
+      "x": 580,
+      "y": 220,
+      "label": "100 µF",
+      "state": 0,
+      "props": {
+        "capacitance": 100
+      }
+    }
+  ],
+  "wires": [
+    {
+      "id": "w0",
+      "to": "p1",
+      "input": 0,
+      "from": "p0"
+    },
+    {
+      "id": "w1",
+      "to": "p2",
+      "input": 0,
+      "from": "p1"
+    },
+    {
+      "id": "w2",
+      "to": "p0",
+      "input": 0,
+      "from": "p2"
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "format": "digital-flow-v1",
+  "nodes": [
+    {
+      "id": "p0",
+      "type": "BATTERY",
+      "x": 180,
+      "y": 220,
+      "label": "9 V",
+      "state": 0,
+      "props": {
+        "voltage": 9
+      }
+    },
+    {
+      "id": "p1",
+      "type": "RESISTOR",
+      "x": 380,
+      "y": 220,
+      "label": "470 Ω",
+      "state": 0,
+      "props": {
+        "resistance": 470
+      }
+    },
+    {
+      "id": "p2",
+      "type": "DIODE_GE",
+      "x": 580,
+      "y": 220,
+      "label": "Diodo Ge",
+      "state": 0,
+      "props": {
+        "forwardVoltage": 0.3,
+        "reverse": false
+      }
+    },
+    {
+      "id": "p3",
+      "type": "LED_RED",
+      "x": 780,
+      "y": 220,
+      "label": "LED rojo",
+      "state": 0,
+      "props": {
+        "forwardVoltage": 1.9,
+        "reverse": false
+      }
+    }
+  ],
+  "wires": [
+    {
+      "id": "w0",
+      "to": "p1",
+      "input": 0,
+      "from": "p0"
+    },
+    {
+      "id": "w1",
+      "to": "p2",
+      "input": 0,
+      "from": "p1"
+    },
+    {
+      "id": "w2",
+      "to": "p3",
+      "input": 0,
+      "from": "p2"
+    },
+    {
+      "id": "w3",
+      "to": "p0",
+      "input": 0,
+      "from": "p3"
+    }
+  ]
+}

@@ -97,10 +97,64 @@ test('v0.5: analog incomplete model warns and cross-domain wire disallowed',()=>
  const {simulateAnalog}=require('../app/src/main/assets/analog.js');
  const cap={...n('cap','CAP'),props:{capacitance:100}};
  const solved=simulateAnalog([cap],[]);
- assert.ok(solved.warnings.some(w=>w.includes('modo esquema')));
- assert.equal(solved.readings.get('cap').supported,false);
+ assert.equal(solved.voltageStatus,'Sin fuente eléctrica');
+ assert.equal(solved.readings.get('cap').supported,true);
  const {validateProject}=require('../app/src/main/assets/engine.js');
  assert.throws(()=>validateProject({format:'digital-flow-v1',nodes:[n('sw','SWITCH'),n('res','RESISTOR')],wires:[{from:'sw',to:'res',input:0}]}),/analógicos/);
+});
+
+
+test('v0.6 MNA: battery and two resistors in series, KVL and current',()=>{
+ const {simulateAnalog}=require('../app/src/main/assets/analog.js');
+ const parts=[{...n('v','VDC'),props:{voltage:12}},{...n('r1','RESISTOR'),props:{resistance:1000}},{...n('r2','RESISTOR'),props:{resistance:2000}}];
+ const links=[{from:'v',to:'r1',input:0},{from:'r1',to:'r2',input:0},{from:'r2',to:'v',input:0}];
+ const o=simulateAnalog(parts,links,0);assert.equal(o.fault,false);
+ assert.ok(Math.abs(o.readings.get('r1').current-.004)<1e-8);
+ assert.ok(Math.abs(o.readings.get('r1').voltage-4)<1e-5);
+ assert.ok(Math.abs(o.readings.get('r2').voltage-8)<1e-5);
+});
+test('v0.6 RC circuit: charging is gradual and current decays',()=>{
+ const {simulateAnalog}=require('../app/src/main/assets/analog.js');
+ const parts=[{...n('v','VDC'),props:{voltage:5}},{...n('r','RESISTOR'),props:{resistance:1000}},{...n('c','CAP'),props:{capacitance:100}}];
+ const links=[{from:'v',to:'r',input:0},{from:'r',to:'c',input:0},{from:'c',to:'v',input:0}];
+ let o=simulateAnalog(parts,links,0);const firstI=o.readings.get('r').current;
+ for(let i=1;i<=120;i++)o=simulateAnalog(parts,links,i*.01,o.state);
+ assert.ok(o.readings.get('c').voltage>4.95&&o.readings.get('c').voltage<5.01,`cap=${o.readings.get('c').voltage}`);
+ assert.ok(Math.abs(o.readings.get('r').current)<firstI/100);
+});
+test('v0.6 RL: initial inductor current near zero then approaches V/R',()=>{
+ const {simulateAnalog}=require('../app/src/main/assets/analog.js');
+ const parts=[{...n('v','VDC'),props:{voltage:10}},{...n('r','RESISTOR'),props:{resistance:10}},{...n('l','INDUCTOR'),props:{inductance:100}}];
+ const links=[{from:'v',to:'r',input:0},{from:'r',to:'l',input:0},{from:'l',to:'v',input:0}];
+ let o=simulateAnalog(parts,links,0);const firstI=o.readings.get('l').current;
+ for(let i=1;i<=100;i++)o=simulateAnalog(parts,links,i*.001,o.state);
+ assert.ok(firstI<.1,`initial inductor ${firstI}`);
+ assert.ok(o.readings.get('l').current>.99&&o.readings.get('l').current<1.01);
+});
+test('v0.6: AC sinusoid and diode polarity reversal',()=>{
+ const {simulateAnalog}=require('../app/src/main/assets/analog.js');
+ const vac=[{...n('v','VAC'),props:{voltage:10,frequency:50,phase:0}},{...n('r','RESISTOR'),props:{resistance:1000}}];
+ const circuit=[{from:'v',to:'r',input:0},{from:'r',to:'v',input:0}];
+ const a=simulateAnalog(vac,circuit,0),b=simulateAnalog(vac,circuit,.005,a.state);
+ assert.ok(Math.abs(a.readings.get('r').current)<.001);
+ assert.ok(b.readings.get('r').current>.009);
+ const d={...n('d','DIODE_GE'),props:{forwardVoltage:.3,reverse:false}};
+ const p=[{...n('b','VDC'),props:{voltage:5}},{...n('r','RESISTOR'),props:{resistance:1000}},d];
+ const ws=[{from:'b',to:'r',input:0},{from:'r',to:'d',input:0},{from:'d',to:'b',input:0}];
+ const fwd=simulateAnalog(p,ws,0).readings.get('d').current;
+ d.props.reverse=true;
+ const rev=simulateAnalog(p,ws,0).readings.get('d').current;
+ assert.ok(fwd>.0035&&fwd<.005,`forward ${fwd}`);
+ assert.ok(Math.abs(rev)<.000005,`reverse leakage ${rev}`);
+});
+test('v0.6 safety: physical unsupported device is not falsely simulated; high short current warns',()=>{
+ const {simulateAnalog}=require('../app/src/main/assets/analog.js');
+ const p=[{...n('v','VDC'),props:{voltage:12}},{...n('r','RESISTOR'),props:{resistance:.01}},{...n('x','OPAMP')}];
+ const w=[{from:'v',to:'r',input:0},{from:'r',to:'v',input:0}];
+ const o=simulateAnalog(p,w,0);
+ assert.equal(o.readings.get('x').supported,false);
+ assert.ok(o.warnings.some(x=>x.includes('sin modelo físico')));
+ assert.equal(o.fault,true);
 });
 
 console.log(`PASS: ${count} grupos de pruebas`);
