@@ -1,6 +1,11 @@
 package com.patinos.simulator;
 
 import android.app.Activity;
+import android.os.Build;
+import android.graphics.Color;
+import android.graphics.Insets;
+import android.view.WindowInsets;
+import android.widget.FrameLayout;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -27,8 +32,21 @@ public class MainActivity extends Activity {
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        FrameLayout shell = new FrameLayout(this);
+        shell.setBackgroundColor(Color.rgb(8, 9, 10));
         web = new WebView(this);
-        setContentView(web);
+        shell.addView(web, new FrameLayout.LayoutParams(-1, -1));
+        // Prevent edge-to-edge system bars from obscuring controls on Android 15+.
+        if (Build.VERSION.SDK_INT >= 35) {
+            shell.setOnApplyWindowInsetsListener((v, insets) -> {
+                Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
+                shell.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+                return insets;
+            });
+        }
+        getWindow().setStatusBarColor(Color.BLACK);
+        getWindow().setNavigationBarColor(Color.BLACK);
+        setContentView(shell);
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
