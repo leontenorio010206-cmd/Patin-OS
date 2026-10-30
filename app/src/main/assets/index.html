@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="es"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=yes"/>
-<meta name="theme-color" content="#0a0a0b"/><title>Patiñ Os · Simulador lógico</title>
+<meta name="theme-color" content="#0a0a0b"/><title>Patiñ Os · Laboratorio de circuitos</title>
 <link rel="stylesheet" href="style.css"/></head><body>
 <div class="app">
   <header class="topbar">
-    <div class="brand"><div class="brand-mark">◈</div><div><strong>PATIÑ <em>OS</em></strong><small>LAB / ANDROID <span class="alpha">ALPHA 0.4</span></small></div></div>
+    <div class="brand"><div class="brand-mark">◈</div><div><strong>PATIÑ <em>OS</em></strong><small>LAB / ANDROID <span class="alpha">ALPHA 0.5</span></small></div></div>
     <div class="header-tools">
       <button id="newBtn" class="action" title="Nuevo proyecto" aria-label="Nuevo proyecto">＋ <span>Nuevo</span></button>
       <button id="runBtn" class="action primary" title="Pausar o reanudar" aria-label="Pausar o reanudar">❚❚ <span>Pausar</span></button>
@@ -21,7 +21,7 @@
   <main class="main">
     <aside class="sidebar">
       <div class="section-head">COMPONENTES <span>+</span></div>
-      <div class="tool-controls"><input id="toolSearch" type="search" placeholder="Buscar componente" aria-label="Buscar componente" autocomplete="off"/><select id="toolCategory" aria-label="Categoría de componentes"><option value="all">Todos</option><option value="source">Fuentes</option><option value="gate">Compuertas</option><option value="advanced">Avanzados</option><option value="output">Salidas</option></select></div>
+      <div class="tool-controls"><input id="toolSearch" type="search" placeholder="Buscar componente" aria-label="Buscar componente" autocomplete="off"/><select id="toolCategory" aria-label="Categoría de componentes"><option value="all">Todos</option><option value="source">Fuentes</option><option value="gate">Compuertas</option><option value="advanced">Avanzados</option><option value="output">Salidas</option><option value="passive">Pasivos</option><option value="supply">Fuentes AC/DC</option><option value="diode">Diodos y LEDs</option><option value="actuator">Actuadores</option><option value="measurement">Medición</option><option value="transistor">Semiconductores e IC</option></select></div>
       <div class="tool-grid" id="tools"></div>
       <div class="section-head lower">PROYECTO</div>
       <div class="side-actions">
@@ -32,7 +32,7 @@
       <div class="tip"><b>Cómo conectar</b><p>Arrastra desde el punto de salida <span class="outdot">●</span> de un componente y luego una entrada <span class="indot">●</span>. Mueve los bloques arrastrándolos.</p></div>
     </aside>
     <section class="workarea">
-      <div class="canvas-top"><div><span class="eyebrow">WORKSPACE / 01</span><h1>Editor de circuitos</h1></div><div class="canvas-controls"><button id="deleteModeBtn">⌫ <span>Borrar</span></button><button id="zoomOutBtn">−</button><button id="zoomResetBtn">100%</button><button id="zoomInBtn">+</button></div></div>
+      <div class="canvas-top"><div><span class="eyebrow">WORKSPACE / 01</span><h1>Editor de circuitos</h1></div><div class="canvas-controls"><button id="deleteModeBtn">⌫ <span>Borrar</span></button><button id="editBtn" title="Editar propiedades del seleccionado">⚙ <span>Editar</span></button><button id="zoomOutBtn">−</button><button id="zoomResetBtn">100%</button><button id="zoomInBtn">+</button></div></div>
       <div class="svg-box" id="stage"><svg id="board" viewBox="0 0 1160 650" preserveAspectRatio="xMidYMid meet" aria-label="Editor visual de circuitos lógicos"><defs>
           <pattern id="dots" patternUnits="userSpaceOnUse" width="24" height="24"><circle cx="1" cy="1" r="1.1" fill="#323437" opacity=".68"/></pattern>
           <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
@@ -40,6 +40,7 @@
        <div class="canvas-hint" id="hint">Toca un interruptor para cambiar el nivel lógico</div>
        <div class="legend"><span><i class="green"></i> HIGH (1)</span><span><i class="gray"></i> LOW (0)</span><span><i class="amber"></i> Sin señal</span></div>
       </div>
+      <div class="analog-status" id="analogStatus" role="status" hidden></div>
       <div class="import-status" id="importStatus" role="alert" hidden></div>
       <div class="bottom">
         <div class="scope-header"><div><span class="eyebrow">OSCILOSCOPIO DIGITAL</span><h2>Señal en tiempo real</h2></div><label>Monitorear <select id="scopeSelect"></select></label></div>
@@ -48,7 +49,8 @@
       </div>
     </section>
   </main>
-  <footer><span>Patiñ Os v0.4 · Simulación lógica local, sin internet</span><span>Flujo animado = propagación de señal lógica; <b>no representa corriente eléctrica física.</b></span></footer>
+  <footer><span>Patiñ Os v0.5 · Simulación lógica y eléctrica básica, sin internet</span><span>Flujo animado = propagación de señal lógica; <b>las corrientes analógicas sólo se calculan para modelos básicos.</b></span></footer>
   <div id="toast" role="status" aria-live="polite"></div>
+  <dialog id="propsDialog" class="props-dialog" aria-labelledby="propsTitle"><form id="propsForm" method="dialog"><h2 id="propsTitle">Propiedades</h2><p class="props-description">Mantén presionado cualquier componente para configurar sus parámetros.</p><div id="propsFields"></div><p id="propsHelp" class="props-help"></p><div class="props-actions"><button type="button" id="propsClose">Cancelar</button><button type="submit" class="props-save">Guardar cambios</button></div></form></dialog>
 </div>
-<script src="engine.js"></script><script src="dig.js"></script><script src="app.js"></script></body></html>
+<script src="engine.js"></script><script src="analog.js"></script><script src="dig.js"></script><script src="app.js"></script></body></html>

@@ -1,0 +1,75 @@
+{
+  "format": "digital-flow-v1",
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "VDC",
+      "x": 120,
+      "y": 300,
+      "label": "Fuente 9 V",
+      "state": 0,
+      "props": {
+        "voltage": 9
+      }
+    },
+    {
+      "id": "n2",
+      "type": "RESISTOR",
+      "x": 350,
+      "y": 160,
+      "label": "R 470 Ω",
+      "state": 0,
+      "props": {
+        "resistance": 470
+      }
+    },
+    {
+      "id": "n3",
+      "type": "DIODE_GE",
+      "x": 560,
+      "y": 160,
+      "label": "Diodo Ge",
+      "state": 0,
+      "props": {
+        "forwardVoltage": 0.3
+      }
+    },
+    {
+      "id": "n4",
+      "type": "LED_RED",
+      "x": 770,
+      "y": 300,
+      "label": "LED rojo",
+      "state": 0,
+      "props": {
+        "forwardVoltage": 1.9
+      }
+    }
+  ],
+  "wires": [
+    {
+      "id": "w1",
+      "from": "n1",
+      "to": "n2",
+      "input": 0
+    },
+    {
+      "id": "w2",
+      "from": "n2",
+      "to": "n3",
+      "input": 0
+    },
+    {
+      "id": "w3",
+      "from": "n3",
+      "to": "n4",
+      "input": 0
+    },
+    {
+      "id": "w4",
+      "from": "n4",
+      "to": "n1",
+      "input": 0
+    }
+  ]
+}

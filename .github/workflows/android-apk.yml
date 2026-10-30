@@ -49,13 +49,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          TAG="v0.4-alpha"
+          TAG="v0.5-alpha"
           APK="app/build/outputs/apk/debug/app-debug.apk"
-          cp "$APK" Patin-OS-v0.4-alpha-debug.apk
+          cp "$APK" Patin-OS-v0.5-alpha-debug.apk
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" Patin-OS-v0.4-alpha-debug.apk --clobber
+            gh release upload "$TAG" Patin-OS-v0.5-alpha-debug.apk --clobber
           else
-            gh release create "$TAG" Patin-OS-v0.4-alpha-debug.apk \
+            gh release create "$TAG" Patin-OS-v0.5-alpha-debug.apk \
               --target "$GITHUB_SHA" \
               --title "Patiñ Os v0.4 Alpha (APK Android)" \
               --notes "Versión alpha de prueba. Descargar el APK directamente desde Assets. Requiere Android 8+. APK firmado para depuración; exporta tus proyectos antes de desinstalar versiones anteriores." \

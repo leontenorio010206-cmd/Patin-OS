@@ -47,3 +47,21 @@ svg{shape-rendering:geometricPrecision;text-rendering:geometricPrecision}
  .tool{min-height:102px;min-width:85px;gap:3px}.tool .glyph{font-size:24px}.tool span:last-child{font-size:11px}
  .canvas-hint{max-width:calc(100% - 20px)}.legend{gap:6px;padding:6px 7px}
 }
+
+/* Patiñ Os v0.5 – parameter editing and a larger searchable component library */
+.component-line{fill:none;stroke:#f1f2f3;stroke-width:2.8;stroke-linejoin:round;stroke-linecap:round}
+.component-shell{fill:#191b1c;stroke:#f1f2f3;stroke-width:2.7}
+.component-on{fill:#143b28;filter:drop-shadow(0 0 8px #40f18b88)}
+.component-letter{font:700 18px system-ui,sans-serif;fill:#f5f5f6;text-anchor:middle;pointer-events:none}
+.component-mini{font:12px system-ui,sans-serif;fill:#cdd1d4;text-anchor:middle;pointer-events:none}
+.component-properties{font:10px system-ui,sans-serif;text-anchor:middle;fill:#aaaeb2;pointer-events:none}
+.sound-waves{fill:none;stroke:#4bf993;stroke-width:3;stroke-linecap:round;filter:drop-shadow(0 0 5px #40f18b)}
+.analog-status{border:1px solid #55534a;border-radius:9px;background:#191817;color:#d9d5cb;padding:8px 12px;font-size:11px;line-height:1.5;max-height:90px;overflow:auto;flex-shrink:0}
+.analog-status[hidden]{display:none}
+.props-dialog{border:1px solid #555c5a;border-radius:16px;background:#161718;color:#f4f4f4;max-width:min(94vw,470px);width:calc(100% - 30px);max-height:83dvh;padding:21px;box-shadow:0 28px 90px #000d;overflow-y:auto}
+.props-dialog::backdrop{background:#000b;backdrop-filter:blur(3px)}.props-dialog h2{font-size:21px;margin:0 0 7px}.props-description,.props-help{color:#aeb3b6;font-size:12px;line-height:1.6;margin:7px 0 16px}
+.property-field{display:flex;flex-direction:column;gap:7px;margin:12px 0;font-size:12px;color:#dce0e2}
+.property-field input,.property-field select{border:1px solid #555e61;border-radius:9px;background:#242628;color:#fff;min-height:44px;padding:9px 12px;font-size:16px;width:100%;box-sizing:border-box}
+.property-field input:focus,.property-field select:focus{outline:2px solid #46ef8d;border-color:#46ef8d}
+.props-actions{display:flex;gap:12px;justify-content:flex-end;margin-top:18px}.props-actions button{min-height:44px;padding:8px 15px;border:1px solid #656a6e;background:#252728;color:#f9f9f9;border-radius:9px}.props-actions .props-save{background:#41f486;border-color:#41f486;color:#07150d;font-weight:700}
+@media(max-width:630px){.canvas-controls #editBtn{font-size:17px}.canvas-controls #editBtn span{display:none}.tool-controls select{width:128px}.tool{min-width:98px}.props-dialog{padding:17px}.analog-status{font-size:10px;max-height:68px}}

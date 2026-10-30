@@ -7,6 +7,46 @@ const extras={
  AND4:{in:4,name:'AND 4'},OR4:{in:4,name:'OR 4'},XOR4:{in:4,name:'XOR 4'},NAND4:{in:4,name:'NAND 4'},NOR4:{in:4,name:'NOR 4'},XNOR4:{in:4,name:'XNOR 4'},
  MUX2:{in:3,name:'MUX 2:1'},MAJ3:{in:3,name:'Mayoría 3'},ADD_SUM:{in:3,name:'Sumador SUM'},ADD_CARRY:{in:3,name:'Sumador CARRY'},PARITY3:{in:3,name:'Paridad'},EQ:{in:2,name:'Igualdad'},IMPLIES:{in:2,name:'Implicación'},PROBE:{in:1,name:'Sonda'}
  };Object.assign(TYPES,extras);
+ const electronics={
+ RESISTOR:'Resistencia',POT:'Potenciómetro',LDR:'Fotoresistencia',NTC:'Termistor NTC',PTC:'Termistor PTC',
+ DIODE_SI:'Diodo silicio',DIODE_GE:'Diodo germanio',DIODE_SCHOTTKY:'Diodo Schottky',DIODE_ZENER:'Diodo Zener',DIODE_TVS:'Diodo TVS',DIODE_BRIDGE:'Puente rectificador',
+ LED_RED:'LED rojo',LED_GREEN:'LED verde',LED_BLUE:'LED azul',LED_RGB:'LED RGB',PHOTODIODE:'Fotodiodo',
+ VDC:'Fuente DC',VAC:'Fuente AC',BATTERY:'Batería',CELL:'Pila',ISOURCE:'Fuente de corriente',GND:'Tierra',JUNCTION:'Unión',VCC:'VCC',
+ CAP:'Capacitor',CAP_POL:'Electrolítico',CAP_VARIABLE:'Capacitor variable',INDUCTOR:'Inductor',CHOKE:'Choque',TRANSFORMER:'Transformador',
+ BUZZER:'Buzzer',PIEZO:'Piezoeléctrico',SPEAKER:'Altavoz',LAMP:'Lámpara',MOTOR:'Motor DC',RELAY:'Relé',FUSE:'Fusible',
+ SW_ANALOG:'Interruptor eléctrico',PUSH:'Pulsador',SW_SPDT:'Conmutador',SW_DIP:'DIP switch',
+ VOLTMETER:'Voltímetro',AMMETER:'Amperímetro',OHMMETER:'Óhmetro',OSCILLOSCOPE:'Osciloscopio',
+ NPN:'Transistor NPN',PNP:'Transistor PNP',NMOS:'MOSFET N',PMOS:'MOSFET P',SCR:'Tiristor SCR',TRIAC:'Triac',OPAMP:'Amplificador operacional',
+ REG_7805:'Regulador 7805',TIMER_555:'Temporizador 555',IC_7400:'CI 7400',IC_7404:'CI 7404',COUNTER_4017:'Contador 4017',
+ SEVEN_SEG:'Display 7 segmentos',CRYSTAL:'Cristal',ANTENNA:'Antena',SOLAR:'Celda solar',VARISTOR:'Varistor',HALL:'Sensor Hall',MIC:'Micrófono',PUSH_PULL:'Driver push-pull'
+ };
+ for(const [type,name] of Object.entries(electronics))TYPES[type]={in:1,name,domain:'analog'};
+ const PROPERTY_SCHEMAS={
+  CLOCK:[['periodMs','Periodo','ms',1000,20,60000],['duty','Ciclo activo','%',50,1,99]],
+  RESISTOR:[['resistance','Resistencia','Ω',1000,.1,1e9]], POT:[['resistance','Resistencia total','Ω',10000,1,1e9],['position','Posición','%',50,0,100]],
+  LDR:[['resistance','Resistencia equivalente','Ω',1000,1,1e9]],NTC:[['resistance','R a temperatura actual','Ω',10000,1,1e9]],PTC:[['resistance','R a temperatura actual','Ω',1000,1,1e9]],
+  DIODE_SI:[['forwardVoltage','Caída directa aproximada','V',.7,.1,5]],DIODE_GE:[['forwardVoltage','Caída directa aproximada','V',.3,.1,2]],DIODE_SCHOTTKY:[['forwardVoltage','Caída directa aproximada','V',.25,.05,3]],
+  LED_RED:[['forwardVoltage','Caída directa','V',1.9,.2,10]],LED_GREEN:[['forwardVoltage','Caída directa','V',2.2,.2,10]],LED_BLUE:[['forwardVoltage','Caída directa','V',3,.2,10]],
+  VDC:[['voltage','Voltaje DC','V',5,-1000,1000]],BATTERY:[['voltage','Voltaje','V',9,.1,1000]],CELL:[['voltage','Voltaje','V',1.5,.1,50]],
+  VAC:[['voltage','Voltaje pico','V',12,0,1000],['frequency','Frecuencia','Hz',50,.1,100000],['phase','Fase','°',0,-360,360]],
+  ISOURCE:[['current','Corriente','A',.005,-100,100]],CAP:[['capacitance','Capacitancia','µF',10,.001,1e6]],CAP_POL:[['capacitance','Capacitancia','µF',100,.001,1e6]],CAP_VARIABLE:[['capacitance','Capacitancia','µF',1,.001,1e6]],
+  INDUCTOR:[['inductance','Inductancia','mH',10,.001,1e6]],CHOKE:[['inductance','Inductancia','mH',100,.001,1e6]],TRANSFORMER:[['ratio','Relación (Np:Ns)','',2,.01,1000]],
+  BUZZER:[['resistance','Resistencia equivalente','Ω',200,1,1e6],['threshold','Umbral visual','V',3,.1,100]],PIEZO:[['resistance','Carga equivalente','Ω',5000,1,1e9]],SPEAKER:[['resistance','Impedancia nominal aprox.','Ω',8,1,10000]],
+  LAMP:[['resistance','Resistencia simplificada','Ω',100,.1,1e8]],MOTOR:[['resistance','Resistencia de carga','Ω',50,.1,1e8]],FUSE:[['rating','Corriente nominal','A',1,.001,1000]],
+  VOLTMETER:[['range','Rango','V',20,.1,10000]],AMMETER:[['range','Rango','A',1,.001,1000]],
+  SW_ANALOG:[['closed','Cerrado','boolean',true,0,1]],PUSH:[['closed','Pulsado','boolean',false,0,1]],SW_SPDT:[['position','Posición','',1,1,2]],
+  DIODE_ZENER:[['breakdown','Voltaje Zener','V',5.1,.2,1000]],DIODE_TVS:[['breakdown','Umbral TVS','V',12,.2,1000]],
+  REG_7805:[['outputVoltage','Voltaje nominal','V',5,0,100]],TIMER_555:[['frequency','Frecuencia prevista','Hz',1,.001,1e6]],
+  RELAY:[['coilResistance','Resistencia bobina','Ω',120,1,1e8]],SOLAR:[['voltage','Voc nominal','V',6,0,1000]],VARISTOR:[['breakdown','Voltaje nominal','V',275,1,1e5]],CRYSTAL:[['frequency','Frecuencia','Hz',16000000,1,1e9]]
+ };
+ function defaultProps(type){return Object.fromEntries((PROPERTY_SCHEMAS[type]||[]).map(([key,,unit,def])=>[key,def]));}
+ function cleanProps(type,value){const schema=PROPERTY_SCHEMAS[type]||[];const result=defaultProps(type);
+  for(const [key,,unit,def,min,max] of schema){if(!value||!(key in value))continue;
+   if(unit==='boolean'){if(typeof value[key]==='boolean')result[key]=value[key];continue;}
+   const raw=Number(value[key]);if(Number.isFinite(raw)&&raw>=min&&raw<=max)result[key]=raw;
+  }return result;
+ }
+
  function allKnown(a){return a.every(isLevel);}
  function evalMulti(type,inputs){
   const match=/^(AND|OR|XOR|NAND|NOR|XNOR)[34]$/.exec(type);
@@ -48,7 +88,7 @@ const extras={
     default:return null;
    }
  }
- function simulate(nodes,wires,clockState){
+ function simulate(nodes,wires,clockState,timeMs){
    const index=new Map(nodes.map(n=>[n.id,n]));const outs=new Map(nodes.map(n=>[n.id,null]));
    const inputLinks=new Map();let conflict=false;
    for(const w of wires){
@@ -66,7 +106,8 @@ const extras={
        const ins=Array.from({length:TYPES[n.type].in},(_,i)=>{
          const src=inputLinks.get(n.id+':'+i);return src==null?null:outs.get(src);
        });
-       const value=evalGate(n.type,ins,n,clockState);
+       const localClock=n.type==='CLOCK'&&Number.isFinite(timeMs)?((timeMs%((n.props?.periodMs)||1000))<(((n.props?.periodMs)||1000)*((n.props?.duty)||50)/100)?1:0):clockState;
+       const value=evalGate(n.type,ins,n,localClock);
        if(outs.get(n.id)!==value){outs.set(n.id,value);changed=true;}
      }
      if(!changed){stable=true;break;}
@@ -80,17 +121,18 @@ const extras={
    const ids=new Set();
    const nodes=raw.nodes.map(n=>{
      if(!n||typeof n.id!=='string'||!/^[-_a-zA-Z0-9]{1,80}$/.test(n.id)||ids.has(n.id)||!TYPES[n.type]||!Number.isFinite(n.x)||!Number.isFinite(n.y)||Math.abs(n.x)>30000||Math.abs(n.y)>30000)throw Error('Componente inválido o repetido.');
-     ids.add(n.id);return{id:n.id,type:n.type,x:n.x,y:n.y,label:String(n.label||TYPES[n.type].name).slice(0,32),state:n.state===1?1:0};
+     ids.add(n.id);return{id:n.id,type:n.type,x:n.x,y:n.y,label:String(n.label||TYPES[n.type].name).slice(0,32),state:n.state===1?1:0,props:cleanProps(n.type,n.props)};
    });
    const occupied=new Set();const wires=[];
    for(const w of raw.wires){
      if(!w||!ids.has(w.from)||!ids.has(w.to)||['LED','OUT','PROBE'].includes(nodes.find(n=>n.id===w.from).type)||!Number.isInteger(w.input)||w.input<0||w.input>=TYPES[nodes.find(n=>n.id===w.to).type].in)throw Error('Cable inválido.');
+     if((TYPES[nodes.find(n=>n.id===w.from).type].domain==='analog') !== (TYPES[nodes.find(n=>n.id===w.to).type].domain==='analog'))throw Error('No conectes componentes analógicos a puertos digitales.');
      const slot=w.to+':'+w.input;if(occupied.has(slot))throw Error('Dos cables en la misma entrada.');occupied.add(slot);
      wires.push({id:typeof w.id==='string'&&/^[-_a-zA-Z0-9]{1,80}$/.test(w.id)?w.id:'w'+wires.length,from:w.from,to:w.to,input:w.input});
    }
    return {format:'digital-flow-v1',nodes,wires};
  }
- const api={TYPES,evalGate,simulate,validateProject};
+ const api={TYPES,PROPERTY_SCHEMAS,defaultProps,cleanProps,evalGate,simulate,validateProject};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
  root.DigitalEngine=api;
 })(typeof window!=='undefined'?window:globalThis);

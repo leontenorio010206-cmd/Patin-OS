@@ -1,20 +1,27 @@
-# Patiñ Os v0.4 Alpha
+# Patiñ Os · v0.5.0-alpha
 
-Simulador táctil de circuitos digitales para Android (WebView sin internet).
+Simulador de circuitos digitales y laboratorio eléctrico experimental para Android. Proyecto GPLv3 independiente de Digital de Helmut Neemann.
 
-## Cambios de v0.4
+## Novedades
+- **99 componentes** con buscador y filtros (compuertas lógicas, resistencias, potenciómetros, diodos Si/Ge/Schottky, LED eléctricos, fuentes DC/AC, baterías, pila, capacitor, inductor, buzzer, altavoz, lámpara, motor, relevadores, medidores, transistores, amplificadores y circuitos integrados, entre otros).
+- **Mantén presionado 0.55 segundos** sobre un componente: aparecerá un diálogo para editar el nombre y los valores que soporta. En ordenador también sirve seleccionar y pulsar ⚙ Editar.
+- Propiedades guardadas en proyectos JSON, localStorage y deshacer. Los antiguos proyectos y la importación `.dig` sencilla siguen disponibles.
+- Dibujo SVG de símbolos y valores; interfaz monocromática con indicadores verdes. El cableado por arrastre de v0.4 sigue funcionando.
+- Modelo eléctrico **DC/instantáneo AC aproximado**: fuentes de voltaje/corriente ideales, resistores, potenciómetros simplificados, sensores resistivos a valor fijado, interruptor, medidores simplificados, lámpara, motor/buzzer como cargas resistivas y diodos con caída de tensión constante (incluido germanio).
+- Avisos visibles para piezas sin modelo eléctrico todavía, como capacitores, bobinas, BJTs, MOSFETs, transformadores, reguladores, 555, etc. **No se les atribuyen resultados inventados.** No es SPICE ni una herramienta de seguridad eléctrica.
 
-- Botones **Nuevo**, **Guardar** (exporta JSON) y **Abrir** (JSON / `.dig` compatible).
-- Cableado táctil: arrastrar **salida → entrada** o tocar primero una salida y luego una entrada; también entrada → salida en dos toques. Puertos con área táctil de 40 unidades SVG y detección por cercanía en pantalla.
-- No elimina cables al intentar conectar a una entrada ocupada; avisa y permite deshacer cambios.
-- 34 tipos de componentes, incluyendo puertas de 3 y 4 entradas, MUX 2:1, majority, sumador SUM y CARRY, igualdad, implicación y sonda.
-- Paleta de búsqueda y categorías para móvil.
-- Mini efecto de partículas cuando hay conexiones incorrectas o no se estabiliza el circuito. **Es un efecto visual, no física ni una explosión real.**
-- Tema negro/blanco y flujo lógico verde animado conservados.
+## Prueba rápida de circuito analógico
+Abre `ejemplo_analogico_9V_ge_led.patinos.json`, conecta fuente→470 Ω→diodo Ge→LED→fuente, y mantén presionada la resistencia para cambiar 470 Ω por 1 kΩ. Observa el cambio aproximado de corriente. El circuito tiene un **retorno eléctrico cerrado**, no sólo una línea de señales digitales.
 
-Motor digital de un bit. No modela voltaje, corriente, temperatura, transistores físicos ni daños. Compatibilidad `.dig` limitada a elementos admitidos por el importador.
+Los componentes digitales y analógicos tienen conectores distintos; la versión alpha impide mezclarlos directamente. La señal visual animada es un indicador didáctico de actividad, **no una representación del movimiento de cargas o de la dirección real de corriente**.
 
-## Compilar
-El workflow `Build Android APK` de GitHub Actions ejecuta pruebas y `gradle :app:assembleDebug`. Requiere JDK 17/Android SDK 35. En local: `node tests/engine.test.cjs` y `python tests/browser_test.py` (Chromium + Playwright).
+## Compilar Android
+GitHub Actions: `Build Android APK` → `Patinos-Android-debug-APK`. El workflow publica un APK en GitHub Releases al completar correctamente la compilación.
 
-Proyecto GPL-3.0, independiente de Digital de Helmut Neemann.
+Pruebas locales: `node tests/engine.test.cjs`; opcional `python tests/v05_browser.py` (requiere Playwright/Chromium; su ruta de navegador es local).
+
+## Limitaciones conocidas
+- Los dispositivos en «Sólo esquema» se dibujan y permiten edición de parámetros, pero no intervienen en la simulación.
+- El modelo eléctrico no calcula transitorios RC/RL, curvas reales de semiconductores, potencia acústica ni temperatura.
+- Hay conexiones dirigidas en la interfaz para facilitar arrastre, aunque en el modelo eléctrico básico los cables se tratan como uniones ideales sin dirección. No conectar directamente una fuente real al teléfono: esta app no controla hardware.
+- Los APK debug pueden tener firmas diferentes; exportar proyectos antes de desinstalar versiones anteriores.
