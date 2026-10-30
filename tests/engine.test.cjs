@@ -40,4 +40,30 @@ test('Validate rejects unsupported format, invalid wires and HTML payloads do no
  assert.throws(()=>validateProject({...p,wires:[{from:'a',to:'b',input:1}]}));
  assert.throws(()=>validateProject({...p,nodes:[n('a','SWITCH'),n('a','LED')]}));
 });
+
+test('v0.4: Multi-input gates, MUX and unknown propagation',()=>{
+  assert.equal(evalGate('AND3',[1,1,1],n('g','AND3'),0),1);
+  assert.equal(evalGate('NAND4',[1,1,1,1],n('g','NAND4'),0),0);
+  assert.equal(evalGate('OR4',[0,null,0,1],n('g','OR4'),0),1);
+  assert.equal(evalGate('XOR3',[1,1,1],n('g','XOR3'),0),1);
+  assert.equal(evalGate('MUX2',[1,0,0],n('g','MUX2'),0),1);
+  assert.equal(evalGate('MUX2',[1,0,1],n('g','MUX2'),0),0);
+  assert.equal(evalGate('MUX2',[1,1,null],n('g','MUX2'),0),1);
+});
+test('v0.4: Adder SUM/CARRY, equivalence and implications',()=>{
+  assert.equal(evalGate('ADD_SUM',[1,1,1],n('s','ADD_SUM'),0),1);
+  assert.equal(evalGate('ADD_CARRY',[1,1,0],n('c','ADD_CARRY'),0),1);
+  assert.equal(evalGate('MAJ3',[0,0,null],n('m','MAJ3'),0),0);
+  assert.equal(evalGate('EQ',[0,0],n('e','EQ'),0),1);
+  assert.equal(evalGate('IMPLIES',[1,0],n('i','IMPLIES'),0),0);
+  assert.equal(evalGate('PROBE',[1],n('p','PROBE'),0),1);
+});
+test('v0.4: Expanded library and four-input project validation',()=>{
+ const {TYPES}=require('../app/src/main/assets/engine.js');
+ assert.equal(Object.keys(TYPES).length,34);
+ const p={format:'digital-flow-v1',nodes:[n('sw','SWITCH',1),n('g','AND4'),n('led','LED')],wires:[{from:'sw',to:'g',input:3},{from:'g',to:'led',input:0}]};
+ assert.equal(validateProject(p).wires.length,2);
+ assert.throws(()=>validateProject({...p,wires:[{from:'sw',to:'g',input:4}]}));
+});
+
 console.log(`PASS: ${count} grupos de pruebas`);
