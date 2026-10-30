@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=yes"/>
+<meta name="theme-color" content="#091321"/><title>Patiñ Os · Simulador lógico</title>
+<link rel="stylesheet" href="style.css"/></head><body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark">◈</div><div><strong>PATIÑ <em>OS</em></strong><small>LAB / ANDROID <span class="alpha">ALPHA 0.2</span></small></div></div>
+    <div class="header-tools">
+      <button id="runBtn" class="action primary">❚❚ <span>Pausar</span></button>
+      <button id="saveBtn" class="action" title="Guardar en dispositivo">⤓ <span>Exportar</span></button>
+      <button id="loadBtn" class="action" title="Abrir proyecto">⇧ <span>Abrir</span></button>
+      <input id="fileInput" type="file" accept=".json,.dig,application/json,application/xml,text/xml,text/plain" hidden />
+    </div>
+  </header>
+  <div class="ribbon">
+    <div class="live-pill"><i></i><b id="liveStatus">SIMULANDO</b></div>
+    <span id="statNodes">0 componentes</span><span class="dotsep">·</span><span id="statWires">0 conexiones</span>
+    <span class="ribbon-spacer"></span><span>SEÑAL LÓGICA: <b class="high-word">1 / HIGH</b></span>
+  </div>
+  <main class="main">
+    <aside class="sidebar">
+      <div class="section-head">COMPONENTES <span>+</span></div>
+      <div class="tool-grid" id="tools"></div>
+      <div class="section-head lower">PROYECTO</div>
+      <div class="side-actions">
+        <button id="sampleBtn">↻ <span>Circuito de ejemplo</span></button>
+        <button id="undoBtn">↶ <span>Deshacer</span></button>
+        <button id="clearBtn">⌫ <span>Limpiar todo</span></button>
+      </div>
+      <div class="tip"><b>Cómo conectar</b><p>Toca el punto de salida <span class="outdot">●</span> de un componente y luego una entrada <span class="indot">●</span>. Mueve los bloques arrastrándolos.</p></div>
+    </aside>
+    <section class="workarea">
+      <div class="canvas-top"><div><span class="eyebrow">WORKSPACE / 01</span><h1>Editor de circuitos</h1></div><div class="canvas-controls"><button id="deleteModeBtn">⌫ <span>Borrar</span></button><button id="zoomOutBtn">−</button><button id="zoomResetBtn">100%</button><button id="zoomInBtn">+</button></div></div>
+      <div class="svg-box" id="stage"><svg id="board" viewBox="0 0 1160 650" preserveAspectRatio="xMidYMid meet" aria-label="Editor visual de circuitos lógicos"><defs>
+          <pattern id="dots" patternUnits="userSpaceOnUse" width="24" height="24"><circle cx="1" cy="1" r="1.1" fill="#314155" opacity=".68"/></pattern>
+          <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs><rect id="background" width="100%" height="100%" fill="url(#dots)"/><g id="wiresLayer"></g><g id="nodesLayer"></g><g id="overlayLayer"></g></svg>
+       <div class="canvas-hint" id="hint">Toca un interruptor para cambiar el nivel lógico</div>
+       <div class="legend"><span><i class="green"></i> HIGH (1)</span><span><i class="gray"></i> LOW (0)</span><span><i class="amber"></i> Sin señal</span></div>
+      </div>
+      <div class="import-status" id="importStatus" role="alert" hidden></div>
+      <div class="bottom">
+        <div class="scope-header"><div><span class="eyebrow">OSCILOSCOPIO DIGITAL</span><h2>Señal en tiempo real</h2></div><label>Monitorear <select id="scopeSelect"></select></label></div>
+        <svg id="scope" viewBox="0 0 920 124" preserveAspectRatio="none"><g id="scopeLayer"></g></svg>
+        <div class="scope-footer"><span>HISTORIAL · ÚLTIMAS 120 MUESTRAS</span><span id="scopeState">HIGH = 1</span></div>
+      </div>
+    </section>
+  </main>
+  <footer><span>Patiñ Os v0.2 · Simulación lógica local, sin internet</span><span>Flujo animado = propagación de señal lógica; <b>no representa corriente eléctrica física.</b></span></footer>
+  <div id="toast" role="status" aria-live="polite"></div>
+</div>
+<script src="engine.js"></script><script src="dig.js"></script><script src="app.js"></script></body></html>

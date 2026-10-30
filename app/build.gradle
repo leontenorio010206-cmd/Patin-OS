@@ -1,0 +1,17 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.patinos.simulator'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.patinos.simulator'
+        minSdk 26
+        targetSdk 35
+        versionCode 3
+        versionName '0.2.1-alpha'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
