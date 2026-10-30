@@ -12,7 +12,7 @@
 - Bloqueo de importaciones que contengan componentes/atributos aún no compatibles, entradas multibit, salidas en conflicto o XML inseguro, con error explícito. El circuito abierto previamente permanece intacto si falla una importación.
 - Reencuadre automático de circuitos importados y mensaje de compatibilidad.
 - Importación de `.json` de Patiñ Os v0.1 / v0.2 y persistencia local. **Exportación solamente JSON**; no guardamos `.dig` ni modificamos los archivos originales.
-- El APK puede compilarse desde la acción GitHub Actions incluida (no verificado aquí con Android SDK).
+- El APK de depuración ya se compiló correctamente en GitHub Actions, con el flujo `android-apk.yml` (ejecución #41108954420).
 
 ## Funciones heredadas de 0.1
 
@@ -30,8 +30,8 @@
 - Abrir la carpeta `Patinos_Android` en Android Studio; instalar los componentes del SDK que solicite; **Build → Build APK(s)**.
 - APK esperado: `app/build/outputs/apk/debug/app-debug.apk`.
 - Android 8.0+ (`minSdk=26`); sin permiso de acceso a internet.
-- También existe `.github/workflows/android-apk.yml` para compilar y generar un *artifact* de APK desde GitHub Actions cuando estos archivos estén en la raíz de un repositorio. Esa compilación aún no fue verificada en un entorno Android en esta entrega.
-- **No se incluye un APK generado**, porque este entorno no tiene Android SDK ni Gradle instalados.
+- También existe `.github/workflows/android-apk.yml` para compilar y generar un *artifact* de APK desde GitHub Actions cuando estos archivos estén en la raíz de un repositorio. La compilación se verificó en GitHub Actions el 30 de octubre de 2026.
+- **APK debug generado:** descarga el artefacto `Patinos-Android-debug-APK` desde [la ejecución exitosa de GitHub Actions](https://github.com/leontenorio010206-cmd/Patin-OS/actions/runs/41108954420). Es una compilación de prueba; todavía no se ha verificado ejecutándose en un celular físico.
 
 ## Demo en navegador
 
@@ -45,7 +45,7 @@ Si aparece *Elementos no compatibles*, mantén tu original en Digital: el archiv
 
 - `node tests/engine.test.cjs`: lógica y validación de JSON (5 grupos).
 - `python tests/browser_test.py`: navegador Chromium/Playwright; lee el `.dig` XOR de Digital y comprueba las cuatro filas de la tabla de verdad, siete conexiones, rechazo de componentes desconocidos y bloqueo de XML DTD.
-- Estas pruebas se ejecutaron en el navegador; **no equivalen a ejecutar ni certificar el APK en Android**.
+- Las pruebas de lógica y navegador se ejecutaron localmente y la compilación del APK se verificó en GitHub Actions; **aún no equivalen a probar el APK en Android físico**.
 
 ## Limitaciones pendientes
 
