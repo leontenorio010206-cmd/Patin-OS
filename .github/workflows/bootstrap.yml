@@ -20,7 +20,7 @@ jobs:
           echo "2bd84091d7fd70ad2453cfa5925d6b46454cc4cbfeac511ff9e6dce3c33a6af5  /tmp/patin-os-source.tar.xz" | sha256sum -c -
           tar -xJf /tmp/patin-os-source.tar.xz
           rm -rf .bootstrap
-          rm -f .github/workflows/bootstrap.yml
+          echo 'Los workflows los mantiene la conexión autorizada de GitHub'
           cat > .gitignore <<'EOF'
           .gradle/
           .idea/
