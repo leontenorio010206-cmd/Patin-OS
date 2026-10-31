@@ -1,0 +1,118 @@
+{
+  "format": "digital-flow-v1",
+  "nodes": [
+    {
+      "id": "src",
+      "type": "VDC",
+      "x": 130,
+      "y": 175,
+      "label": "Fuente 5 V",
+      "state": 0,
+      "props": {
+        "voltage": 5
+      }
+    },
+    {
+      "id": "rgb",
+      "type": "LED_RGB",
+      "x": 620,
+      "y": 195,
+      "label": "RGB",
+      "state": 0,
+      "props": {
+        "commonAnode": false
+      }
+    },
+    {
+      "id": "rr",
+      "type": "RESISTOR",
+      "x": 370,
+      "y": 105,
+      "label": "R 330",
+      "state": 0,
+      "props": {
+        "resistance": 330
+      }
+    },
+    {
+      "id": "rg",
+      "type": "RESISTOR",
+      "x": 370,
+      "y": 195,
+      "label": "G 330",
+      "state": 0,
+      "props": {
+        "resistance": 330
+      }
+    },
+    {
+      "id": "rb",
+      "type": "RESISTOR",
+      "x": 370,
+      "y": 285,
+      "label": "B 330",
+      "state": 0,
+      "props": {
+        "resistance": 330
+      }
+    }
+  ],
+  "wires": [
+    {
+      "id": "wrgb3src0",
+      "from": "rgb",
+      "fromPin": 3,
+      "to": "src",
+      "toPin": 0,
+      "input": 0
+    },
+    {
+      "id": "wsrc1rr0",
+      "from": "src",
+      "fromPin": 1,
+      "to": "rr",
+      "toPin": 0,
+      "input": 0
+    },
+    {
+      "id": "wrr1rgb0",
+      "from": "rr",
+      "fromPin": 1,
+      "to": "rgb",
+      "toPin": 0,
+      "input": 0
+    },
+    {
+      "id": "wsrc1rg0",
+      "from": "src",
+      "fromPin": 1,
+      "to": "rg",
+      "toPin": 0,
+      "input": 0
+    },
+    {
+      "id": "wrg1rgb1",
+      "from": "rg",
+      "fromPin": 1,
+      "to": "rgb",
+      "toPin": 1,
+      "input": 0
+    },
+    {
+      "id": "wsrc1rb0",
+      "from": "src",
+      "fromPin": 1,
+      "to": "rb",
+      "toPin": 0,
+      "input": 0
+    },
+    {
+      "id": "wrb1rgb2",
+      "from": "rb",
+      "fromPin": 1,
+      "to": "rgb",
+      "toPin": 2,
+      "input": 0
+    }
+  ]
+}

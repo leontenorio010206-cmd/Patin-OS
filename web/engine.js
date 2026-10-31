@@ -28,7 +28,7 @@ const extras={
  REG_7805:'Regulador 7805',TIMER_555:'Temporizador 555',IC_7400:'CI 7400',IC_7404:'CI 7404',COUNTER_4017:'Contador 4017',
  SEVEN_SEG:'Display 7 segmentos',CRYSTAL:'Cristal',ANTENNA:'Antena',SOLAR:'Celda solar',VARISTOR:'Varistor',HALL:'Sensor Hall',MIC:'Micrófono',PUSH_PULL:'Driver push-pull'
  };
- for(const [type,name] of Object.entries(electronics))TYPES[type]={in:1,name,domain:'analog',pins:['NPN','PNP','NMOS','PMOS','OPAMP'].includes(type)?3:2};
+ for(const [type,name] of Object.entries(electronics))TYPES[type]={in:1,name,domain:'analog',pins:['NPN','PNP','NMOS','PMOS','OPAMP'].includes(type)?3:['LED_RGB','TRANSFORMER'].includes(type)?4:2};
  const PROPERTY_SCHEMAS={
   DFF:[['initial','Q inicial','',0,0,1]],TFF:[['initial','Q inicial','',0,0,1]],JKFF:[['initial','Q inicial','',0,0,1]],SRLATCH:[['initial','Q inicial','',0,0,1]],
   CLOCK:[['periodMs','Periodo','ms',1000,20,60000],['duty','Ciclo activo','%',50,1,99]],
@@ -39,6 +39,7 @@ const extras={
   DIODE_FAST:[['forwardVoltage','Caída directa de referencia (1 mA)','V',.65,.1,3],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],DIODE_POWER:[['forwardVoltage','Caída directa de referencia (1 mA)','V',.72,.1,3],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],
   DIODE_SI:[['forwardVoltage','Caída directa aproximada','V',.7,.1,5],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],DIODE_GE:[['forwardVoltage','Caída directa aproximada','V',.3,.1,2],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],DIODE_SCHOTTKY:[['forwardVoltage','Caída directa aproximada','V',.25,.05,3],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],
   LED_WHITE:[['forwardVoltage','Caída directa a 1 mA','V',3.1,.2,10],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],LED_AMBER:[['forwardVoltage','Caída directa a 1 mA','V',2.05,.2,10],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],
+  LED_RGB:[['redForward','Vf rojo @ 10mA','V',1.9,.5,5],['greenForward','Vf verde @ 10mA','V',2.2,.5,5],['blueForward','Vf azul @ 10mA','V',3.0,.5,5],['commonAnode','Ánodo común (A)','boolean',false,0,1]],
   LED_RED:[['forwardVoltage','Caída directa','V',1.9,.2,10],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],LED_GREEN:[['forwardVoltage','Caída directa','V',2.2,.2,10],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],LED_BLUE:[['forwardVoltage','Caída directa','V',3,.2,10],['reverse','Invertir ánodo/cátodo','boolean',false,0,1]],
   VDC:[['voltage','Voltaje DC','V',5,-1000,1000]],BATTERY:[['voltage','Voltaje','V',9,.1,1000]],CELL:[['voltage','Voltaje','V',1.5,.1,50]],
   VAC:[['voltage','Voltaje pico','V',12,0,1000],['frequency','Frecuencia','Hz',50,.1,100000],['phase','Fase','°',0,-360,360]],
@@ -47,7 +48,7 @@ const extras={
   VTRI:[['voltage','Amplitud pico','V',5,0,1000],['offset','Offset DC','V',0,-1000,1000],['frequency','Frecuencia','Hz',1,.01,200000],['phase','Fase','°',0,-360,360]],
   VSAW:[['voltage','Amplitud pico','V',5,0,1000],['offset','Offset DC','V',0,-1000,1000],['frequency','Frecuencia','Hz',1,.01,200000],['phase','Fase','°',0,-360,360]],
   ISOURCE:[['current','Corriente','A',.005,-100,100]],IPULSE:[['low','Corriente baja','A',0,-100,100],['high','Corriente alta','A',.01,-100,100],['frequency','Frecuencia','Hz',1,.01,200000],['duty','Ciclo activo','%',50,1,99]],CAP:[['capacitance','Capacitancia','µF',10,.001,1e6]],CAP_POL:[['capacitance','Capacitancia','µF',100,.001,1e6]],CAP_VARIABLE:[['capacitance','Capacitancia','µF',1,.001,1e6]],
-  INDUCTOR:[['inductance','Inductancia','mH',10,.001,1e6]],CHOKE:[['inductance','Inductancia','mH',100,.001,1e6]],TRANSFORMER:[['ratio','Relación (Np:Ns)','',2,.01,1000]],
+  INDUCTOR:[['inductance','Inductancia','mH',10,.001,1e6]],CHOKE:[['inductance','Inductancia','mH',100,.001,1e6]],TRANSFORMER:[['ratio','Relación de espiras Np:Ns','',2,.05,100],['inductance','Inductancia primaria','mH',100,.1,1e6],['coupling','Acoplamiento k','',.995,.1,.9999],['primaryResistance','R primaria','Ω',.5,.001,1e4],['secondaryResistance','R secundaria','Ω',.25,.001,1e4]],
   BUZZER:[['resistance','Resistencia equivalente','Ω',200,1,1e6],['threshold','Umbral visual','V',3,.1,100]],PIEZO:[['resistance','Carga equivalente','Ω',5000,1,1e9]],SPEAKER:[['resistance','Impedancia nominal aprox.','Ω',8,1,10000]],
   LAMP:[['resistance','Resistencia simplificada','Ω',100,.1,1e8]],MOTOR:[['resistance','Resistencia de carga','Ω',50,.1,1e8]],FUSE:[['rating','Corriente nominal','A',1,.001,1000]],
   VOLTMETER:[['range','Rango','V',20,.1,10000]],AMMETER:[['range','Rango','A',1,.001,1000]],

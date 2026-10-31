@@ -162,7 +162,7 @@
  function showMessage(txt){let t=$('toast');t.textContent=txt;t.classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('visible'),2500);}
  function xyEvent(e){const p=board.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const m=board.getScreenCTM();return m?p.matrixTransform(m.inverse()):{x:0,y:0};}
  function posOutput(n){return{x:n.x+52,y:n.y};}
- function posAnalog(n,p){return p===0?{x:n.x-52,y:n.y+(MULTI.has(n.type)?-9:0)}:p===1?{x:n.x+52,y:n.y+(MULTI.has(n.type)?-9:0)}:{x:n.x,y:n.y+47};}
+ function posAnalog(n,p){if(n.type==='TRANSFORMER'||n.type==='LED_RGB'){return [{x:n.x-60,y:n.y-24},{x:n.x-60,y:n.y+24},{x:n.x+60,y:n.y-24},{x:n.x+60,y:n.y+24}][p]||{x:n.x,y:n.y};}return p===0?{x:n.x-52,y:n.y+(MULTI.has(n.type)?-9:0)}:p===1?{x:n.x+52,y:n.y+(MULTI.has(n.type)?-9:0)}:{x:n.x,y:n.y+47};}
  function wireEndpoint(w,which,node){if(TYPES[node.type].domain==='analog')return posAnalog(node,which==='from'?(w.fromPin??1):(w.toPin??0));return which==='from'?posOutput(node):posInput(node,w.input);}
  function posInput(n,i){const size=TYPES[n.type].in;return{x:n.x-52,y:n.y+(i-(size-1)/2)*Math.min(25,60/Math.max(1,size-1))};} 
  const round=(x,n=10)=>Math.round(x/n)*n;
@@ -200,8 +200,8 @@
    if('capacitance' in p)return `${p.capacitance} µF`;
    if('inductance' in p)return `${p.inductance} mH`;
    if('forwardVoltage' in p)return `Vf ${p.forwardVoltage} V${p.reverse?' · ↶':''}`;
-   if('frequency' in p)return `${p.frequency} Hz`;
-   return TYPES[n.type]?.domain==='analog'?((SUPPORTED.has(n.type)||MULTI.has(n.type))?'Modelo educativo':'Sólo esquema'):'';
+   if(n.type==='TRANSFORMER')return `${p.ratio}:1 · ${p.inductance} mH · k=${p.coupling}`;if(n.type==='LED_RGB')return p.commonAnode?'Ánodo común':'Cátodo común';if('frequency' in p)return `${p.frequency} Hz`;
+   return TYPES[n.type]?.domain==='analog'?((SUPPORTED.has(n.type)||MULTI.has(n.type)||['TRANSFORMER','LED_RGB'].includes(n.type))?'Modelo educativo':'Sólo esquema'):'';
  }
  function analogShape(n,reading){
   const x=n.x,y=n.y,t=n.type,wire=`<path class="component-line" d="M ${x-39} ${y} H ${x-27} M ${x+27} ${y} H ${x+39}"/>`;
@@ -215,7 +215,9 @@
     if(t==='LDR')core+=line(`M ${x-16} ${y-29} l 8 12 m 5 -18 l 8 12`);
   }
   else if(['CAP','CAP_POL','CAP_VARIABLE'].includes(t)){core=sym(line(`M ${x-6} ${y-25} v 50 M ${x+6} ${y-25} v 50`));if(t==='CAP_VARIABLE')core+=line(`M ${x-22} ${y+22} L ${x+20} ${y-22}`);if(t==='CAP_POL')core+=`<text x="${x-20}" y="${y-14}" class="component-mini">+</text>`;}
-  else if(['INDUCTOR','CHOKE','TRANSFORMER'].includes(t))core=sym(line(`M ${x-26} ${y} c 0 -18 12 -18 12 0 c 0 -18 12 -18 12 0 c 0 -18 12 -18 12 0 c 0 -18 12 -18 12 0`));
+  else if(t==='TRANSFORMER'){core=`<g><path class="component-line" d="M ${x-30} ${y-32} q -18 8 0 16 q -18 8 0 16 q -18 8 0 16 q -18 8 0 16 M ${x+30} ${y-32} q 18 8 0 16 q 18 8 0 16 q 18 8 0 16 q 18 8 0 16 M ${x-6} ${y-38} V ${y+38} M ${x+6} ${y-38} V ${y+38}"/><circle cx="${x-39}" cy="${y-25}" r="3" fill="#eee"/><circle cx="${x+39}" cy="${y-25}" r="3" fill="#eee"/></g>`;}
+  else if(['INDUCTOR','CHOKE'].includes(t))core=sym(line(`M ${x-26} ${y} c 0 -18 12 -18 12 0 c 0 -18 12 -18 12 0 c 0 -18 12 -18 12 0 c 0 -18 12 -18 12 0`));
+  else if(t==='LED_RGB'){const cs=reading?.channels||{red:0,green:0,blue:0};const circles=[['red',-17,'#ff5f64'],['green',0,'#47f18b'],['blue',17,'#6b97ff']].map(([k,dx,col])=>`<circle cx="${x+dx}" cy="${y}" r="8" fill="${col}" opacity="${(cs[k]||0)>.00002?1:.24}" ${cs[k]>.00002?'filter="url(#glow)"':''}/>`).join('');core=`<rect class="component-shell" x="${x-42}" y="${y-29}" width="84" height="58" rx="12"/>${circles}`;}
   else if(['DIODE_SI','DIODE_GE','DIODE_FAST','DIODE_POWER','DIODE_SCHOTTKY','DIODE_ZENER','DIODE_TVS','TVS_BIDIR','LED_RED','LED_GREEN','LED_BLUE','LED_AMBER','LED_WHITE','LED_RGB','PHOTODIODE'].includes(t)){
     core=sym(`<path class="component-line" d="M ${x-23} ${y-19} L ${x+13} ${y} L ${x-23} ${y+19} Z"/>`+line(`M ${x+13} ${y-21} V ${y+21}`));
     if(t.startsWith('LED_'))core+=line(`M ${x+6} ${y-24} l 13 -11 m-3 0 l 4 -2 m-3 7 l 4 1 M ${x+18} ${y-16} l 13 -11`);
@@ -273,8 +275,8 @@
    if(analog){
      const countPins=TYPES[t].pins||2;
      for(let i=0;i<countPins;i++){
-       const q=posAnalog(n,i),status=reading?.supported?(reading.active?'#42ef85':'#969da4'):'#efc36a';
-       const labels=(t==='NPN'||t==='PNP')?['B','C','E']:(t==='NMOS'||t==='PMOS')?['G','D','S']:(t==='OPAMP'?['+','−','OUT']:t.startsWith('LED_')||t.startsWith('DIODE_')||t==='PHOTODIODE'?['A','K']:['−','+']);
+       const q=posAnalog(n,i),status=reading?.supported?(reading.pinCurrents?Math.abs(reading.pinCurrents[i]||0)>1e-6:reading.active?'#42ef85':'#969da4'):'#efc36a';
+       const labels=t==='TRANSFORMER'?['P+','P−','S+','S−']:t==='LED_RGB'?['R','G','B',n.props?.commonAnode?'A':'K']:(t==='NPN'||t==='PNP')?['B','C','E']:(t==='NMOS'||t==='PMOS')?['G','D','S']:(t==='OPAMP'?['+','−','OUT']:t.startsWith('LED_')||t.startsWith('DIODE_')||t==='PHOTODIODE'?['A','K']:['−','+']);
        ports+=`<circle class="port-hit" data-kind="analog-pin" data-node="${n.id}" data-pin="${i}" cx="${q.x}" cy="${q.y}" r="19"/><circle class="port" cx="${q.x}" cy="${q.y}" r="8.5" fill="${status}"/><text class="component-mini" x="${q.x+(i===0?-12:i===1?12:0)}" y="${q.y+(i===2?19:-13)}" text-anchor="middle">${labels[i]}</text>`;
      }
    } else {
@@ -293,7 +295,7 @@
  function analogWireFlow(w,a,b){
    const ra=analogState.readings.get(a.id),rb=analogState.readings.get(b.id);
    if(!ra?.supported && !rb?.supported)return 0;
-   const out=(r,p)=>r?.supported&&Number.isFinite(r.current)?(p===1?1:-1)*r.current:null;
+   const out=(r,p)=>{if(!r?.supported)return null;if(Array.isArray(r.pinCurrents))return Number.isFinite(r.pinCurrents[p])?-r.pinCurrents[p]:null;return Number.isFinite(r.current)?(p===1?1:-1)*r.current:null;};
    const ia=out(ra,w.fromPin??1),ib=out(rb,w.toPin??0);
    const threshold=1e-6;
    if(ia!==null&&Math.abs(ia)>threshold && ib!==null&&Math.abs(ib)>threshold){
@@ -360,7 +362,7 @@
    makeField('label','Nombre',node.label,'text',null,null);
    for(const [key,label,unit,def,min,max] of (PROPERTY_SCHEMAS[node.type]||[]))makeField(key,label,node.props?.[key]??def,unit==='boolean'?'boolean':'number',min,max,unit==='boolean'?'':unit);
    if(!PROPERTY_SCHEMAS[node.type]?.length){const hint=document.createElement('p');hint.textContent='Este componente todavía no tiene parámetros eléctricos; puedes cambiar su nombre y posición.';fields.appendChild(hint);}
-   $('propsHelp').textContent=TYPES[node.type].domain==='analog'?((SUPPORTED.has(node.type)||MULTI.has(node.type))?'Modelos didácticos MNA y SPICE-lite: transistores y opamp usan aproximaciones DC; exporta .cir para comparar con ngspice. No usar para seguridad ni diseño de potencia.':'Este componente está disponible para esquemas; su comportamiento físico aún no se simula.'):'Componente lógico: modifica sus propiedades y comprueba las señales.';
+   $('propsHelp').textContent=TYPES[node.type].domain==='analog'?((SUPPORTED.has(node.type)||MULTI.has(node.type)||['TRANSFORMER','LED_RGB'].includes(node.type))?'Modelos didácticos MNA y SPICE-lite: transistores y opamp usan aproximaciones DC; exporta .cir para comparar con ngspice. No usar para seguridad ni diseño de potencia.':'Este componente está disponible para esquemas; su comportamiento físico aún no se simula.'):'Componente lógico: modifica sus propiedades y comprueba las señales.';
    dialog.dataset.node=node.id;dialog.showModal();
  }
  $('propsForm').addEventListener('submit',e=>{e.preventDefault();const node=nodes.find(n=>n.id===$('propsDialog').dataset.node);if(!node)return;
@@ -567,7 +569,7 @@
  function drawTools(){const query=$('toolSearch').value.toLocaleLowerCase('es').trim(),cat=$('toolCategory').value;
   const allowed=new Set((workspace==='logic'?logicCategories:electronicsCategories).flatMap(c=>categories[c]));
   const types=(cat==='all'?buttonTypes:(categories[cat]||[])).filter(t=>allowed.has(t)).filter(t=>(labels[t]+' '+t).toLocaleLowerCase('es').includes(query));
-  $('tools').innerHTML=types.length?types.map(t=>{const kind=TYPES[t].domain==='analog'?((SUPPORTED.has(t)||MULTI.has(t))?'Física':'Esquema'):'Lógica';return `<button class="tool" data-type="${t}" title="Añadir ${labels[t]} · ${kind}"><span class="glyph">${symbols[t]}</span><span>${labels[t]}</span><small class="model-type ${kind==='Esquema'?'pending':''}">${kind}</small></button>`;}).join(''):'<span class="empty-tools">Sin resultados</span>';
+  $('tools').innerHTML=types.length?types.map(t=>{const kind=TYPES[t].domain==='analog'?((SUPPORTED.has(t)||MULTI.has(t)||['TRANSFORMER','LED_RGB'].includes(t))?'Física':'Esquema'):'Lógica';return `<button class="tool" data-type="${t}" title="Añadir ${labels[t]} · ${kind}"><span class="glyph">${symbols[t]}</span><span>${labels[t]}</span><small class="model-type ${kind==='Esquema'?'pending':''}">${kind}</small></button>`;}).join(''):'<span class="empty-tools">Sin resultados</span>';
  }
  $('logicModeBtn').onclick=()=>switchWorkspace('logic');$('electronicsModeBtn').onclick=()=>switchWorkspace('electronics');
  $('toolSearch').oninput=drawTools;$('toolCategory').onchange=drawTools;drawTools();

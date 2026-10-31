@@ -40,6 +40,7 @@ jobs:
           node tests/spice.test.cjs
           node tests/v09.test.cjs
           node tests/v091.test.cjs
+          node tests/v092.test.cjs
       - name: Compilar APK
         run: gradle --no-daemon :app:assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
@@ -53,13 +54,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          TAG="v0.9.1-alpha"
+          TAG="v0.9.2-alpha"
           APK="app/build/outputs/apk/debug/app-debug.apk"
-          cp "$APK" Patin-OS-v0.9.1-alpha-debug.apk
+          cp "$APK" Patin-OS-v0.9.2-alpha-debug.apk
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" Patin-OS-v0.9.1-alpha-debug.apk --clobber
+            gh release upload "$TAG" Patin-OS-v0.9.2-alpha-debug.apk --clobber
           else
-            gh release create "$TAG" Patin-OS-v0.9.1-alpha-debug.apk \
+            gh release create "$TAG" Patin-OS-v0.9.2-alpha-debug.apk \
               --target "$GITHUB_SHA" \
               --title "Patiñ Os v0.9.1 Alpha (APK Android)" \
               --notes "Alpha con correcciones de cableado por pin, diodos y LEDs, corriente animada, polaridad A/K y advertencia de sobrecorriente." \

@@ -1,0 +1,21 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {defaultProps,TYPES,validateProject}=require('../web/engine.js');
+const {simulateSpice,exportNetlist}=require('../web/spice.js');
+const n=(id,type,props={})=>({id,type,label:id,x:0,y:0,props:{...defaultProps(type),...props}});
+const w=(from,fromPin,to,toPin)=>({from,fromPin,to,toPin,input:0});
+assert.equal(TYPES.TRANSFORMER.pins,4);assert.equal(TYPES.LED_RGB.pins,4);
+const s=n('s','VDC',{voltage:5}),rgb=n('rgb','LED_RGB'),rr=n('rr','RESISTOR',{resistance:330}),rg=n('rg','RESISTOR',{resistance:330}),rb=n('rb','RESISTOR',{resistance:330});
+const p=[s,rgb,rr,rg,rb],ww=[w('rgb',3,'s',0),w('s',1,'rr',0),w('rr',1,'rgb',0),w('s',1,'rg',0),w('rg',1,'rgb',1),w('s',1,'rb',0),w('rb',1,'rgb',2)];
+const result=simulateSpice(p,ww,.1);assert.equal(result.readings.get('rgb').supported,true,result.warnings.join(' '));
+for(const c of Object.values(result.readings.get('rgb').channels))assert.ok(c>.003&&c<.02,'RGB channel '+c);
+assert.equal(validateProject({format:'digital-flow-v1',nodes:p,wires:ww}).wires.length,ww.length);
+const tx=n('tx','TRANSFORMER',{ratio:2,inductance:300,coupling:.998}),ac=n('ac','VAC',{voltage:10,frequency:50}),load=n('load','RESISTOR',{resistance:100});
+const tn=[tx,ac,load],tw=[w('ac',1,'tx',0),w('tx',1,'ac',0),w('tx',2,'load',0),w('load',1,'tx',3)];
+let state=null,last,max=0;
+for(let i=0;i<160;i++){last=simulateSpice(tn,tw,i/3200,state);assert.equal(last.readings.get('tx').supported,true,last.warnings.join(' '));state=last.state;max=Math.max(max,Math.abs(last.readings.get('tx').channels.secondaryVoltage));}
+assert.ok(max>1&&max<10,'AC secondary peak '+max);
+const exported=exportNetlist(p.concat(tn),ww.concat(tw));
+assert.match(exported.text,/^K\d+ L\d+P L\d+S /m);
+assert.match(exported.text,/^D\d+R .* PATRGBR/m);
+console.log('PASS: v0.9.2 RGB and transformer checks');

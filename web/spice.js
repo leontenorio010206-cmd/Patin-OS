@@ -6,8 +6,9 @@
 'use strict';
 const digital=root.DigitalEngine||(typeof module!=='undefined'&&module.exports?require('./engine.js'):null);
 const analog=root.PatinosAnalog||(typeof module!=='undefined'&&module.exports?require('./analog.js'):null);
+const special=root.PatinosSpecial||(typeof module!=='undefined'&&module.exports?require('./special.js'):null);
 const MULTI=new Set(['NPN','PNP','NMOS','PMOS','OPAMP']);
-const count=n=>MULTI.has(n.type)?3:2;
+const count=n=>digital.TYPES[n.type]?.pins||2;
 const rnum=(n,key,def)=>Number.isFinite(Number(n.props?.[key]))?Number(n.props[key]):def;
 const pn=(w,which)=>{const k=which==='from'?'fromPin':'toPin';return Number.isInteger(w[k])?w[k]:which==='from'?1:0;};
 function netsOf(nodes,wires){
@@ -59,6 +60,7 @@ function nonlinearCurrents(n,v){
 }
 function simulateSpice(nodes,wires,time=0,previous=null){
  const analogNodes=nodes.filter(n=>digital.TYPES[n.type]?.domain==='analog');
+ if(analogNodes.some(n=>n.type==='TRANSFORMER'||n.type==='LED_RGB'))return special.simulateSpecial(nodes,wires,time,previous);
  if(!analogNodes.some(n=>MULTI.has(n.type)))return analog.simulateAnalog(nodes,wires,time,previous);
  const unsupported=analogNodes.filter(n=>!analog.SUPPORTED.has(n.type)&&!MULTI.has(n.type));
  const physical=analogNodes.filter(n=>analog.SUPPORTED.has(n.type)||MULTI.has(n.type));
@@ -189,6 +191,8 @@ function exportNetlist(nodes,wires){
    else if(['VDC','VCC','BATTERY','CELL'].includes(t))lines.push(`V${id} ${p(1)} ${p(0)} DC ${analog.sourceVoltage(n,0)}`);
    else if(t==='VAC')lines.push(`V${id} ${p(1)} ${p(0)} SIN(0 ${rnum(n,'voltage',12)} ${rnum(n,'frequency',50)})`);
    else if(t==='ISOURCE')lines.push(`I${id} ${p(0)} ${p(1)} DC ${rnum(n,'current',.005)}`);
+   else if(t==='TRANSFORMER'){const lp=rnum(n,'inductance',100)*.001,ratio=rnum(n,'ratio',2),k=rnum(n,'coupling',.995),pr=rnum(n,'primaryResistance',.5),sr=rnum(n,'secondaryResistance',.25);lines.push(`L${id}P ${p(0)} TP${id} ${lp}`);lines.push(`R${id}P TP${id} ${p(1)} ${pr}`);lines.push(`L${id}S ${p(2)} TS${id} ${lp/(ratio*ratio)}`);lines.push(`R${id}S TS${id} ${p(3)} ${sr}`);lines.push(`K${id} L${id}P L${id}S ${Math.min(.9999,k)}`);}
+   else if(t==='LED_RGB'){const com=p(3),ca=!!n.props?.commonAnode;for(const [j,letter] of ['R','G','B'].entries())lines.push(`D${id}${letter} ${ca?com:p(j)} ${ca?p(j):com} PATRGB${letter}`);}
    else if(t==='NPN'||t==='PNP')lines.push(`Q${id} ${p(1)} ${p(0)} ${p(2)} PAT${t}`);
    else if(t==='NMOS'||t==='PMOS')lines.push(`M${id} ${p(1)} ${p(0)} ${p(2)} ${p(2)} PAT${t}`);
    else if(t==='OPAMP')lines.push(`E${id} ${p(2)} 0 ${p(0)} ${p(1)} ${rnum(n,'openLoopGain',100)}`);
@@ -196,7 +200,7 @@ function exportNetlist(nodes,wires){
    else if(t.startsWith('DIODE_')||t.startsWith('LED_'))lines.push(`D${id} ${p(0)} ${p(1)} PATD`);
    else unsupported.push(`${n.label} (${t})`);
  }
- lines.push('.model PATNPN NPN(IS=1e-14 BF=100)','.model PATPNP PNP(IS=1e-14 BF=100)','.model PATNMOS NMOS(LEVEL=1 VTO=2 KP=0.002)','.model PATPMOS PMOS(LEVEL=1 VTO=-2 KP=0.002)','.model PATD D(IS=1e-12 N=1.8)','.op','.end');
+ lines.push('.model PATNPN NPN(IS=1e-14 BF=100)','.model PATPNP PNP(IS=1e-14 BF=100)','.model PATNMOS NMOS(LEVEL=1 VTO=2 KP=0.002)','.model PATPMOS PMOS(LEVEL=1 VTO=-2 KP=0.002)','.model PATD D(IS=1e-12 N=1.8)','.model PATRGBR D(IS=4e-19 N=2)','.model PATRGBG D(IS=8e-22 N=2)','.model PATRGBB D(IS=2e-27 N=2)',physical.some(n=>n.type==='TRANSFORMER'||n.type==='VAC'||n.type==='VPULSE')?'.tran 0.0001 0.1':'.op','.end');
  if(!grounds.length)unsupported.push('Sin GND: se recomienda una referencia 0');
  return {text:lines.join('\n')+'\n',unsupported};
 }

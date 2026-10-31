@@ -1,0 +1,75 @@
+{
+  "format": "digital-flow-v1",
+  "nodes": [
+    {
+      "id": "ac",
+      "type": "VAC",
+      "x": 150,
+      "y": 195,
+      "label": "AC 10 Vp",
+      "state": 0,
+      "props": {
+        "voltage": 10,
+        "frequency": 50
+      }
+    },
+    {
+      "id": "tx",
+      "type": "TRANSFORMER",
+      "x": 440,
+      "y": 195,
+      "label": "Trafo 2:1",
+      "state": 0,
+      "props": {
+        "ratio": 2,
+        "inductance": 300,
+        "coupling": 0.998
+      }
+    },
+    {
+      "id": "load",
+      "type": "RESISTOR",
+      "x": 745,
+      "y": 195,
+      "label": "100 ohm",
+      "state": 0,
+      "props": {
+        "resistance": 100
+      }
+    }
+  ],
+  "wires": [
+    {
+      "id": "wac1tx0",
+      "from": "ac",
+      "fromPin": 1,
+      "to": "tx",
+      "toPin": 0,
+      "input": 0
+    },
+    {
+      "id": "wtx1ac0",
+      "from": "tx",
+      "fromPin": 1,
+      "to": "ac",
+      "toPin": 0,
+      "input": 0
+    },
+    {
+      "id": "wtx2load0",
+      "from": "tx",
+      "fromPin": 2,
+      "to": "load",
+      "toPin": 0,
+      "input": 0
+    },
+    {
+      "id": "wload1tx3",
+      "from": "load",
+      "fromPin": 1,
+      "to": "tx",
+      "toPin": 3,
+      "input": 0
+    }
+  ]
+}
