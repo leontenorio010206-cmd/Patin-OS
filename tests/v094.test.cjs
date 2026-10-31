@@ -1,0 +1,12 @@
+const assert=require('node:assert/strict');
+const {COLORS,brightnessFromCurrent,single,rgb}=require('../web/leds.js');
+let n=0;const check=(description,fn)=>{fn();n++;console.log('PASS',description)};
+check('five colors',()=>{assert.equal(Object.keys(COLORS).length,5);assert.equal(new Set(Object.values(COLORS)).size,5)});
+check('off without current',()=>{for(const t of Object.keys(COLORS))assert.equal(single(t,{supported:true,current:0},{}).brightness,0)});
+check('correct color when current passes',()=>{for(const t of Object.keys(COLORS)){let led=single(t,{supported:true,current:.012},{});assert.equal(led.color,COLORS[t]);assert.ok(led.brightness>.4)}});
+check('unsolved circuits never glow',()=>assert.equal(single('LED_RED',{supported:false,current:.02},{}).brightness,0));
+check('reverse polarity',()=>{assert.equal(single('LED_BLUE',{supported:true,current:-.01},{}).brightness,0);assert.ok(single('LED_BLUE',{supported:true,current:-.01},{reverse:true}).lit)});
+check('brightness tracks current and saturates',()=>{assert.ok(brightnessFromCurrent(.012)>brightnessFromCurrent(.003));assert.equal(brightnessFromCurrent(.03),1)});
+check('RGB independently colors its three channels',()=>{const r=rgb({supported:true,channels:{red:.012,green:0,blue:.009}});assert.ok(r.channels.red.brightness>.3);assert.equal(r.channels.green.brightness,0);assert.ok(r.channels.blue.brightness>.2)});
+check('RGB unsolved has no light',()=>assert.equal(rgb({supported:false,channels:{red:.02}}).brightness,0));
+console.log('PASS',n,'v0.9.4 LED checks');

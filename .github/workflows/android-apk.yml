@@ -42,6 +42,7 @@ jobs:
           node tests/v091.test.cjs
           node tests/v092.test.cjs
           node tests/v093.test.cjs
+          node tests/v094.test.cjs
       - name: Compilar APK
         run: gradle --no-daemon :app:assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
@@ -55,15 +56,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          TAG="v0.9.3-alpha"
+          TAG="v0.9.4-alpha"
           APK="app/build/outputs/apk/debug/app-debug.apk"
-          cp "$APK" Patin-OS-v0.9.3-alpha-debug.apk
+          cp "$APK" Patin-OS-v0.9.4-alpha-debug.apk
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" Patin-OS-v0.9.3-alpha-debug.apk --clobber
+            gh release upload "$TAG" Patin-OS-v0.9.4-alpha-debug.apk --clobber
           else
-            gh release create "$TAG" Patin-OS-v0.9.3-alpha-debug.apk \
+            gh release create "$TAG" Patin-OS-v0.9.4-alpha-debug.apk \
               --target "$GITHUB_SHA" \
-              --title "Patiñ Os v0.9.3 Alpha (APK Android)" \
-              --notes "Modelos educativos multipin para 18 componentes: puente, relé, conmutador, instrumentos, regulador, CI y dispositivos RF; lee límites de simulación." \
+              --title "Patiñ Os v0.9.4 Alpha (APK Android)" \
+              --notes "Luces LED del color correcto, intensidad visual dependiente de corriente; modelos educativos." \
               --prerelease
           fi

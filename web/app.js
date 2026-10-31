@@ -4,6 +4,7 @@
  const {TYPES,PROPERTY_SCHEMAS,defaultProps,cleanProps,simulate,validateProject}=window.DigitalEngine;
  const {simulateAnalog,SUPPORTED}=window.PatinosAnalog;
  const {DEVICE_TYPES,pinNames}=window.PatinosDevices;
+ const {COLORS:LED_COLORS,single:singleLedVisual,rgb:rgbLedVisual}=window.PatinosLED;
  const {parseDig}=window.PatinosDig;
  const {simulateSpice,exportNetlist,MULTI}=window.PatinosSpice;
  const $=id=>document.getElementById(id);
@@ -234,10 +235,21 @@
   else if(['CAP','CAP_POL','CAP_VARIABLE'].includes(t)){core=sym(line(`M ${x-6} ${y-25} v 50 M ${x+6} ${y-25} v 50`));if(t==='CAP_VARIABLE')core+=line(`M ${x-22} ${y+22} L ${x+20} ${y-22}`);if(t==='CAP_POL')core+=`<text x="${x-20}" y="${y-14}" class="component-mini">+</text>`;}
   else if(t==='TRANSFORMER'){core=`<g><path class="component-line" d="M ${x-30} ${y-32} q -18 8 0 16 q -18 8 0 16 q -18 8 0 16 q -18 8 0 16 M ${x+30} ${y-32} q 18 8 0 16 q 18 8 0 16 q 18 8 0 16 q 18 8 0 16 M ${x-6} ${y-38} V ${y+38} M ${x+6} ${y-38} V ${y+38}"/><circle cx="${x-39}" cy="${y-25}" r="3" fill="#eee"/><circle cx="${x+39}" cy="${y-25}" r="3" fill="#eee"/></g>`;}
   else if(['INDUCTOR','CHOKE'].includes(t))core=sym(line(`M ${x-26} ${y} c 0 -18 12 -18 12 0 c 0 -18 12 -18 12 0 c 0 -18 12 -18 12 0 c 0 -18 12 -18 12 0`));
-  else if(t==='LED_RGB'){const cs=reading?.channels||{red:0,green:0,blue:0};const circles=[['red',-17,'#ff5f64'],['green',0,'#47f18b'],['blue',17,'#6b97ff']].map(([k,dx,col])=>`<circle cx="${x+dx}" cy="${y}" r="8" fill="${col}" opacity="${(cs[k]||0)>.00002?1:.24}" ${cs[k]>.00002?'filter="url(#glow)"':''}/>`).join('');core=`<rect class="component-shell" x="${x-42}" y="${y-29}" width="84" height="58" rx="12"/>${circles}`;}
+  else if(t==='LED_RGB'){
+    const colors=rgbLedVisual(reading);
+    const circles=[['red',-17],['green',0],['blue',17]].map(([k,dx])=>{
+      const v=colors.channels[k],opacity=(.2+.8*v.brightness).toFixed(3);
+      return `<g data-channel="${k}" data-brightness="${v.brightness.toFixed(3)}"><circle cx="${x+dx}" cy="${y}" r="18" fill="${v.color}" opacity="${(.48*v.brightness).toFixed(3)}" filter="url(#ledBloom)"/><circle cx="${x+dx}" cy="${y}" r="9" fill="${v.color}" opacity="${opacity}"/></g>`;
+    }).join('');
+    core=`<rect class="component-shell" x="${x-42}" y="${y-29}" width="84" height="58" rx="12"/><circle cx="${x}" cy="${y}" r="28" fill="${colors.mixed}" opacity="${(.11*colors.brightness).toFixed(3)}"/>${circles}`;
+  }
   else if(['DIODE_SI','DIODE_GE','DIODE_FAST','DIODE_POWER','DIODE_SCHOTTKY','DIODE_ZENER','DIODE_TVS','TVS_BIDIR','LED_RED','LED_GREEN','LED_BLUE','LED_AMBER','LED_WHITE','LED_RGB','PHOTODIODE'].includes(t)){
-    core=sym(`<path class="component-line" d="M ${x-23} ${y-19} L ${x+13} ${y} L ${x-23} ${y+19} Z"/>`+line(`M ${x+13} ${y-21} V ${y+21}`));
-    if(t.startsWith('LED_'))core+=line(`M ${x+6} ${y-24} l 13 -11 m-3 0 l 4 -2 m-3 7 l 4 1 M ${x+18} ${y-16} l 13 -11`);
+    const isLed=t.startsWith('LED_')&&t!=='LED_RGB';
+    const appearance=isLed?singleLedVisual(t,reading,n.props):null;
+    const bloom=isLed?`<circle cx="${x-3}" cy="${y}" r="25" fill="${appearance.color}" opacity="${appearance.haloOpacity.toFixed(3)}" filter="url(#ledBloom)" pointer-events="none"/>`:'';
+    const diodeFill=isLed?` fill="${appearance.color}" fill-opacity="${appearance.bodyOpacity.toFixed(3)}"`:'';
+    core=sym(`${bloom}<path class="component-line" d="M ${x-23} ${y-19} L ${x+13} ${y} L ${x-23} ${y+19} Z"${diodeFill}/>`+line(`M ${x+13} ${y-21} V ${y+21}`));
+    if(isLed)core+=`<path d="M ${x+6} ${y-24} l 13 -11 m-3 0 l 4 -2 m-3 7 l 4 1 M ${x+18} ${y-16} l 13 -11" fill="none" stroke="${appearance.color}" stroke-width="2.5" opacity="${appearance.raysOpacity.toFixed(3)}"/>`;
     if(t==='DIODE_GE')core+=`<text x="${x}" y="${y+34}" class="component-mini">Ge</text>`;
     if(t==='DIODE_ZENER')core+=line(`M ${x+13} ${y-21} l 7 0 M ${x+13} ${y+21} l -7 0`);
     if(t==='DIODE_SCHOTTKY')core+=line(`M ${x+13} ${y-21} l 7 0 v 7 M ${x+13} ${y+21} h -7 v -7`);
@@ -592,7 +604,7 @@
  function drawTools(){const query=$('toolSearch').value.toLocaleLowerCase('es').trim(),cat=$('toolCategory').value;
   const allowed=new Set((workspace==='logic'?logicCategories:electronicsCategories).flatMap(c=>categories[c]));
   const types=(cat==='all'?buttonTypes:(categories[cat]||[])).filter(t=>allowed.has(t)).filter(t=>(labels[t]+' '+t).toLocaleLowerCase('es').includes(query));
-  $('tools').innerHTML=types.length?types.map(t=>{const kind=TYPES[t].domain==='analog'?((SUPPORTED.has(t)||MULTI.has(t)||DEVICE_TYPES.has(t)||['TRANSFORMER','LED_RGB'].includes(t))?'Física':'Esquema'):'Lógica';return `<button class="tool" data-type="${t}" title="Añadir ${labels[t]} · ${kind}"><span class="glyph">${symbols[t]}</span><span>${labels[t]}</span><small class="model-type ${kind==='Esquema'?'pending':''}">${kind}</small></button>`;}).join(''):'<span class="empty-tools">Sin resultados</span>';
+  $('tools').innerHTML=types.length?types.map(t=>{const kind=TYPES[t].domain==='analog'?((SUPPORTED.has(t)||MULTI.has(t)||DEVICE_TYPES.has(t)||['TRANSFORMER','LED_RGB'].includes(t))?'Física':'Esquema'):'Lógica';return `<button class="tool" data-type="${t}" title="Añadir ${labels[t]} · ${kind}"><span class="glyph" style="${t==='LED_RGB'?'background:linear-gradient(90deg,#ff4255,#45ed77,#4489ff);background-clip:text;-webkit-background-clip:text;color:transparent':`color:${LED_COLORS[t]||'#fff'}`}">${symbols[t]}</span><span>${labels[t]}</span><small class="model-type ${kind==='Esquema'?'pending':''}">${kind}</small></button>`;}).join(''):'<span class="empty-tools">Sin resultados</span>';
  }
  $('logicModeBtn').onclick=()=>switchWorkspace('logic');$('electronicsModeBtn').onclick=()=>switchWorkspace('electronics');
  $('toolSearch').oninput=drawTools;$('toolCategory').onchange=drawTools;drawTools();

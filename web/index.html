@@ -40,6 +40,7 @@
       <div class="canvas-top"><div><span class="eyebrow">WORKSPACE / 01</span><h1 id="workspaceTitle">Editor de lógica digital</h1></div><div class="canvas-controls"><button id="deleteModeBtn">⌫ <span>Borrar</span></button><button id="editBtn" title="Editar propiedades del seleccionado">⚙ <span>Editar</span></button><button id="zoomOutBtn">−</button><button id="zoomResetBtn">100%</button><button id="zoomInBtn">+</button></div></div>
       <div class="svg-box" id="stage"><svg id="board" viewBox="0 0 1160 650" preserveAspectRatio="xMidYMid meet" aria-label="Editor visual de circuitos lógicos"><defs>
           <pattern id="dots" patternUnits="userSpaceOnUse" width="24" height="24"><circle cx="1" cy="1" r="1.1" fill="#323437" opacity=".68"/></pattern>
+          <filter id="ledBloom" x="-130%" y="-130%" width="360%" height="360%"><feGaussianBlur stdDeviation="11"/></filter>
           <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
         </defs><rect id="background" width="100%" height="100%" fill="url(#dots)"/><g id="wiresLayer"></g><g id="nodesLayer"></g><g id="overlayLayer"></g><g id="fxLayer" aria-hidden="true"></g></svg>
        <div class="canvas-hint" id="hint">Toca un interruptor para cambiar el nivel lógico</div>
@@ -54,8 +55,8 @@
       </div>
     </section>
   </main>
-  <footer><span>Patiñ Os v0.9.3 · Simulación lógica, DC, AC, RC/RL y fotovoltaica, sin internet</span><span>Flujo verde: estado lógico o sentido convencional estimado de corriente; <b>la corriente y tensión son cálculos didácticos de MNA, no mediciones físicas.</b></span></footer>
+  <footer><span>Patiñ Os v0.9.4 · Simulación lógica, DC, AC, RC/RL y fotovoltaica, sin internet</span><span>Flujo verde: estado lógico o sentido convencional estimado de corriente; <b>la corriente y tensión son cálculos didácticos de MNA, no mediciones físicas.</b></span></footer>
   <div id="toast" role="status" aria-live="polite"></div>
   <dialog id="propsDialog" class="props-dialog" aria-labelledby="propsTitle"><form id="propsForm" method="dialog"><h2 id="propsTitle">Propiedades</h2><p class="props-description">Mantén presionado cualquier componente para configurar sus parámetros.</p><div id="propsFields"></div><p id="propsHelp" class="props-help"></p><div class="props-actions"><button type="button" id="propsClose">Cancelar</button><button type="submit" class="props-save">Guardar cambios</button></div></form></dialog>
 </div>
-<script src="engine.js"></script><script src="analog.js"></script><script src="special.js"></script><script src="devices.js"></script><script src="spice.js"></script><script src="dig.js"></script><script src="app.js"></script></body></html>
+<script src="engine.js"></script><script src="analog.js"></script><script src="special.js"></script><script src="devices.js"></script><script src="spice.js"></script><script src="dig.js"></script><script src="leds.js"></script><script src="app.js"></script></body></html>
