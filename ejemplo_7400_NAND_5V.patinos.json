@@ -1,0 +1,86 @@
+{
+  "format": "digital-flow-v1",
+  "nodes": [
+    {
+      "id": "s",
+      "type": "VDC",
+      "x": 150,
+      "y": 300,
+      "label": "s",
+      "state": 0,
+      "props": {
+        "voltage": 5
+      }
+    },
+    {
+      "id": "ic",
+      "type": "IC_7400",
+      "x": 480,
+      "y": 280,
+      "label": "ic",
+      "state": 0,
+      "props": {}
+    },
+    {
+      "id": "r",
+      "type": "RESISTOR",
+      "x": 775,
+      "y": 320,
+      "label": "r",
+      "state": 0,
+      "props": {
+        "resistance": 1000
+      }
+    }
+  ],
+  "wires": [
+    {
+      "id": "w1",
+      "from": "s",
+      "fromPin": 1,
+      "to": "ic",
+      "toPin": 13,
+      "input": 0
+    },
+    {
+      "id": "w2",
+      "from": "s",
+      "fromPin": 0,
+      "to": "ic",
+      "toPin": 6,
+      "input": 0
+    },
+    {
+      "id": "w3",
+      "from": "s",
+      "fromPin": 1,
+      "to": "ic",
+      "toPin": 0,
+      "input": 0
+    },
+    {
+      "id": "w4",
+      "from": "s",
+      "fromPin": 1,
+      "to": "ic",
+      "toPin": 1,
+      "input": 0
+    },
+    {
+      "id": "w5",
+      "from": "ic",
+      "fromPin": 2,
+      "to": "r",
+      "toPin": 0,
+      "input": 0
+    },
+    {
+      "id": "w6",
+      "from": "r",
+      "fromPin": 1,
+      "to": "s",
+      "toPin": 0,
+      "input": 0
+    }
+  ]
+}

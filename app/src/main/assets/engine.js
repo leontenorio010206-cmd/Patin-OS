@@ -28,7 +28,8 @@ const extras={
  REG_7805:'Regulador 7805',TIMER_555:'Temporizador 555',IC_7400:'CI 7400',IC_7404:'CI 7404',COUNTER_4017:'Contador 4017',
  SEVEN_SEG:'Display 7 segmentos',CRYSTAL:'Cristal',ANTENNA:'Antena',SOLAR:'Celda solar',VARISTOR:'Varistor',HALL:'Sensor Hall',MIC:'Micrófono',PUSH_PULL:'Driver push-pull'
  };
- for(const [type,name] of Object.entries(electronics))TYPES[type]={in:1,name,domain:'analog',pins:['NPN','PNP','NMOS','PMOS','OPAMP'].includes(type)?3:['LED_RGB','TRANSFORMER'].includes(type)?4:2};
+ const DEVICE_PINS={DIODE_BRIDGE:4,RELAY:5,SW_SPDT:3,OHMMETER:2,OSCILLOSCOPE:2,HALL:3,MIC:2,SCR:3,TRIAC:3,REG_7805:3,TIMER_555:8,IC_7400:14,IC_7404:14,COUNTER_4017:16,SEVEN_SEG:10,CRYSTAL:2,ANTENNA:2,PUSH_PULL:4};
+ for(const [type,name] of Object.entries(electronics))TYPES[type]={in:1,name,domain:'analog',pins:DEVICE_PINS[type]||(['NPN','PNP','NMOS','PMOS','OPAMP'].includes(type)?3:['LED_RGB','TRANSFORMER'].includes(type)?4:2)};
  const PROPERTY_SCHEMAS={
   DFF:[['initial','Q inicial','',0,0,1]],TFF:[['initial','Q inicial','',0,0,1]],JKFF:[['initial','Q inicial','',0,0,1]],SRLATCH:[['initial','Q inicial','',0,0,1]],
   CLOCK:[['periodMs','Periodo','ms',1000,20,60000],['duty','Ciclo activo','%',50,1,99]],
@@ -64,7 +65,20 @@ const extras={
   NMOS:[['threshold','Tensión umbral Vth','V',2,.1,10],['transconductance','Parámetro KP','A/V²',.002,.000001,1],['channelLambda','Modulación de canal','1/V',.02,0,1]],
   PMOS:[['threshold','Magnitud de Vth','V',2,.1,10],['transconductance','Parámetro KP','A/V²',.002,.000001,1],['channelLambda','Modulación de canal','1/V',.02,0,1]],
   OPAMP:[['openLoopGain','Ganancia abierta idealizada','V/V',100,1,100000],['railVoltage','Riel virtual de saturación','V',12,.1,100]],
-  RELAY:[['coilResistance','Resistencia bobina','Ω',120,1,1e8]],CRYSTAL:[['frequency','Frecuencia','Hz',16000000,1,1e9]]
+  RELAY:[['coilResistance','Resistencia bobina','Ω',120,1,1e8],['pickUpVoltage','Voltaje activación','V',5,.1,100]],
+ CRYSTAL:[['frequency','Frecuencia nominal (referencia)','Hz',16000000,1,1e9],['seriesResistance','Resistencia serie','Ω',40,.01,1e6],['seriesInductance','Inductancia motional','mH',10,.001,1e7],['seriesCapacitance','Capacitancia motional','pF',.01,.00001,1000]],
+ DIODE_BRIDGE:[['forwardVoltage','Caída por diodo','V',.7,.1,3]],
+ SW_SPDT:[['position','Contacto seleccionado','',1,1,2]],OHMMETER:[['testCurrent','Corriente de prueba','mA',1,.001,10]],OSCILLOSCOPE:[['inputResistance','Impedancia de entrada','Ω',1000000,10000,1e12]],
+ HALL:[['field','Campo magnético','mT',0,-500,500],['threshold','Umbral magnético','mT',10,-500,500],['outputResistance','Resistencia de salida','Ω',100,1,1e6]],
+ MIC:[['frequency','Frecuencia acústica','Hz',440,1,20000],['amplitude','Amplitud de señal','V',.03,0,10],['outputResistance','Resistencia de salida','Ω',600,1,1e6]],
+ SCR:[['gateThreshold','Umbral de compuerta','V',.7,.1,5],['gateResistance','Resistencia compuerta','Ω',1000,10,1e6],['onResistance','Resistencia conduciendo','Ω',1,.01,100],['holdingCurrent','Corriente mantenimiento','A',.01,.00001,10]],
+ TRIAC:[['gateThreshold','Umbral de compuerta','V',.7,.1,5],['gateResistance','Resistencia compuerta','Ω',1000,10,1e6],['onResistance','Resistencia conduciendo','Ω',1,.01,100],['holdingCurrent','Corriente mantenimiento','A',.01,.00001,10]],
+ REG_7805:[['outputVoltage','Salida nominal','V',5,1,20],['dropout','Caída mínima','V',2,.1,10],['quiescentResistance','Consumo aproximado','Ω',1000,100,1e7],['outputResistance','Resistencia de salida','Ω',.2,.01,500]],
+ TIMER_555:[['frequency','Reloj astable idealizado','Hz',1,.001,100000],['duty','Ciclo activo','%',50,1,99],['outputResistance','Resistencia salida','Ω',50,1,10000]],
+ IC_7400:[['outputResistance','Resistencia salidas','Ω',45,1,10000]],IC_7404:[['outputResistance','Resistencia salidas','Ω',45,1,10000]],COUNTER_4017:[['outputResistance','Resistencia salidas','Ω',75,1,10000]],
+ SEVEN_SEG:[['commonAnode','Ánodo común','boolean',false,0,1],['forwardVoltage','Caída por segmento','V',2,.5,5]],
+ ANTENNA:[['radiationResistance','R equivalente de radiación','Ω',73,1,1e6],['parasiticCapacitance','Capacitancia parásita','pF',10,.001,1e6]],
+ PUSH_PULL:[['outputResistance','Resistencia salida','Ω',20,.1,10000]]
  };
  function defaultProps(type){return Object.fromEntries((PROPERTY_SCHEMAS[type]||[]).map(([key,,unit,def])=>[key,def]));}
  function cleanProps(type,value){const schema=PROPERTY_SCHEMAS[type]||[];const result=defaultProps(type);

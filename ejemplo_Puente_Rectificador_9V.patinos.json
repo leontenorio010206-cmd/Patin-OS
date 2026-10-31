@@ -1,0 +1,71 @@
+{
+  "format": "digital-flow-v1",
+  "nodes": [
+    {
+      "id": "src",
+      "type": "VAC",
+      "x": 160,
+      "y": 250,
+      "label": "src",
+      "state": 0,
+      "props": {
+        "voltage": 9,
+        "frequency": 50
+      }
+    },
+    {
+      "id": "bridge",
+      "type": "DIODE_BRIDGE",
+      "x": 460,
+      "y": 240,
+      "label": "bridge",
+      "state": 0,
+      "props": {}
+    },
+    {
+      "id": "load",
+      "type": "RESISTOR",
+      "x": 760,
+      "y": 250,
+      "label": "load",
+      "state": 0,
+      "props": {
+        "resistance": 1000
+      }
+    }
+  ],
+  "wires": [
+    {
+      "id": "w1",
+      "from": "src",
+      "fromPin": 1,
+      "to": "bridge",
+      "toPin": 0,
+      "input": 0
+    },
+    {
+      "id": "w2",
+      "from": "src",
+      "fromPin": 0,
+      "to": "bridge",
+      "toPin": 1,
+      "input": 0
+    },
+    {
+      "id": "w3",
+      "from": "bridge",
+      "fromPin": 2,
+      "to": "load",
+      "toPin": 0,
+      "input": 0
+    },
+    {
+      "id": "w4",
+      "from": "bridge",
+      "fromPin": 3,
+      "to": "load",
+      "toPin": 1,
+      "input": 0
+    }
+  ]
+}

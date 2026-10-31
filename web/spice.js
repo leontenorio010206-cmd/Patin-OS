@@ -7,6 +7,7 @@
 const digital=root.DigitalEngine||(typeof module!=='undefined'&&module.exports?require('./engine.js'):null);
 const analog=root.PatinosAnalog||(typeof module!=='undefined'&&module.exports?require('./analog.js'):null);
 const special=root.PatinosSpecial||(typeof module!=='undefined'&&module.exports?require('./special.js'):null);
+const devices=root.PatinosDevices||(typeof module!=='undefined'&&module.exports?require('./devices.js'):null);
 const MULTI=new Set(['NPN','PNP','NMOS','PMOS','OPAMP']);
 const count=n=>digital.TYPES[n.type]?.pins||2;
 const rnum=(n,key,def)=>Number.isFinite(Number(n.props?.[key]))?Number(n.props[key]):def;
@@ -60,6 +61,7 @@ function nonlinearCurrents(n,v){
 }
 function simulateSpice(nodes,wires,time=0,previous=null){
  const analogNodes=nodes.filter(n=>digital.TYPES[n.type]?.domain==='analog');
+ if(analogNodes.some(n=>devices.DEVICE_TYPES.has(n.type)))return devices.simulateDevices(nodes,wires,time,previous);
  if(analogNodes.some(n=>n.type==='TRANSFORMER'||n.type==='LED_RGB'))return special.simulateSpecial(nodes,wires,time,previous);
  if(!analogNodes.some(n=>MULTI.has(n.type)))return analog.simulateAnalog(nodes,wires,time,previous);
  const unsupported=analogNodes.filter(n=>!analog.SUPPORTED.has(n.type)&&!MULTI.has(n.type));
@@ -196,6 +198,26 @@ function exportNetlist(nodes,wires){
    else if(t==='NPN'||t==='PNP')lines.push(`Q${id} ${p(1)} ${p(0)} ${p(2)} PAT${t}`);
    else if(t==='NMOS'||t==='PMOS')lines.push(`M${id} ${p(1)} ${p(0)} ${p(2)} ${p(2)} PAT${t}`);
    else if(t==='OPAMP')lines.push(`E${id} ${p(2)} 0 ${p(0)} ${p(1)} ${rnum(n,'openLoopGain',100)}`);
+   else if(t==='DIODE_BRIDGE'){
+     for(const [k,a,b] of [['A',0,2],['B',1,2],['C',3,0],['D',3,1]])lines.push(`D${id}${k} ${p(a)} ${p(b)} PATD`);
+   }
+   else if(t==='SW_SPDT'){
+     lines.push(`R${id}A ${p(0)} ${p(1)} ${rnum(n,'position',1)===1?0.02:1e10}`);
+     lines.push(`R${id}B ${p(0)} ${p(2)} ${rnum(n,'position',1)===2?0.02:1e10}`);
+   }
+   else if(t==='CRYSTAL'){
+     lines.push(`R${id} ${p(0)} XR${id} ${rnum(n,'seriesResistance',40)}`);
+     lines.push(`L${id} XR${id} XL${id} ${rnum(n,'seriesInductance',10)*1e-3}`);
+     lines.push(`C${id} XL${id} ${p(1)} ${rnum(n,'seriesCapacitance',.01)*1e-12}`);
+   }
+   else if(t==='ANTENNA'){
+     lines.push(`R${id} ${p(0)} ${p(1)} ${rnum(n,'radiationResistance',73)}`);
+     lines.push(`C${id} ${p(0)} ${p(1)} ${rnum(n,'parasiticCapacitance',10)*1e-12}`);
+   }
+   else if(t==='OSCILLOSCOPE')lines.push(`R${id} ${p(0)} ${p(1)} ${rnum(n,'inputResistance',1000000)}`);
+   else if(t==='SEVEN_SEG'){
+     const common=!!n.props?.commonAnode;for(let k=0;k<8;k++)lines.push(`D${id}${k} ${p(common?8:k)} ${p(common?k:8)} PATD`);
+   }
    else if(t==='GND'||t==='JUNCTION'){} 
    else if(t.startsWith('DIODE_')||t.startsWith('LED_'))lines.push(`D${id} ${p(0)} ${p(1)} PATD`);
    else unsupported.push(`${n.label} (${t})`);
