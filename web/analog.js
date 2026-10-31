@@ -62,20 +62,24 @@
    }
    const out=A.map(r=>r[n]);return out.every(Number.isFinite)?out:null;
  }
+ // Educational diode model: exponential below Vf, bounded dynamic resistance above Vf.
  function diodeIV(n,v){
-   // Shockley with finite series-like upper conductance for numerical safety.
    const drop=number(n,'forwardVoltage',n.type==='DIODE_GE'?.3:.7);
-   const vt=number(n,'ideality',1.8)*.02585;
-   const is=.001/(Math.exp(Math.min(100,drop/vt))-1); // Vf at reference 1 mA
-   const e=Math.exp(Math.min(100,Math.max(-100,v/vt)));
-   const i=is*(e-1),g=Math.max(1e-12,Math.min(1e4,is*e/vt));
+   const vt=Math.max(.012,number(n,'ideality',1.8)*.02585);
+   const led=n.type.startsWith('LED_');
+   const reference=led?.01:.001;
+   const series=Math.max(.5,number(n,'seriesResistance',led?8:2));
+   const saturation=reference/(Math.exp(Math.min(80,drop/vt))-1);
+   let i,g;
+   if(v<=drop){const e=Math.exp(Math.max(-80,(v-drop)/vt));i=reference*e-saturation;g=Math.max(1e-9,reference*e/vt);}
+   else {const differential=series+vt/reference;i=reference+(v-drop)/differential;g=1/differential;}
    if(n.type==='DIODE_ZENER'||n.type==='DIODE_TVS'){
-     const bv=number(n,'breakdown',5.1);const rev=Math.exp(Math.min(30,Math.max(-30,(-v-bv)/.06)));
-     return {i:i-1e-8*(rev-1),g:g+1e-8*rev/.06};
+     const bv=number(n,'breakdown',5.1),rev=Math.exp(Math.min(24,Math.max(-24,(-v-bv)/.06)));
+     i-=1e-8*(rev-1);g+=1e-8*rev/.06;
    }
    return {i:n.type==='PHOTODIODE'?i-photoCurrent(n):i,g};
  }
- const keyOf=(nodes,wires)=>JSON.stringify([nodes.filter(n=>TYPES[n.type]?.domain==='analog').map(n=>[n.id,n.type,n.props]),wires.map(w=>[w.from,w.to,w.input])]);
+ const keyOf=(nodes,wires)=>JSON.stringify([nodes.filter(n=>TYPES[n.type]?.domain==='analog').map(n=>[n.id,n.type,n.props]),wires.map(w=>[w.from,w.fromPin??1,w.to,w.toPin??0])]);
  function simulateAnalog(nodes,wires,timeSeconds=0,previous=null){
    const analog=nodes.filter(n=>TYPES[n.type]?.domain==='analog');
    const readings=new Map(),warnings=[];
@@ -90,10 +94,12 @@
      return{readings,warnings,voltageStatus:status,state:null,fault:false};
    };
    if(!valid.some(n=>VSOURCE.has(n.type)||CURRENT.has(n.type)||n.type==='SOLAR'||n.type==='PHOTODIODE'))return fallback('Sin fuente eléctrica');
+   // Respect either pin order, including 0->0 and 1->1 links.
    const parent=new Map(),find=k=>{if(parent.get(k)!==k)parent.set(k,find(parent.get(k)));return parent.get(k);};
    const union=(a,b)=>{const x=find(a),y=find(b);if(x!==y)parent.set(y,x);};
    for(const n of analog){parent.set(n.id+':L',n.id+':L');parent.set(n.id+':R',n.id+':R');}
-   for(const w of wires)if(map.has(w.from)&&map.has(w.to))union(w.from+':R',w.to+':L');
+   const pin=(id,index)=>id+(index===0?':L':':R');
+   for(const w of wires)if(map.has(w.from)&&map.has(w.to))union(pin(w.from,w.fromPin??1),pin(w.to,w.toPin??0));
    for(const n of analog)if(IDEAL.has(n.type))union(n.id+':L',n.id+':R');
    const grounds=analog.filter(n=>n.type==='GND');
    for(let i=1;i<grounds.length;i++)union(grounds[0].id+':L',grounds[i].id+':L');
@@ -185,7 +191,7 @@
        memories.set(n.id,{v,i});lastBranch.set(n.id,i);
      }
    }
-   if(!solvedAll)return fallback('Sin convergencia','El circuito no convergió: revisa cortocircuitos, fuentes incompatibles y referencias.');
+   if(!solvedAll)return fallback('Sin convergencia','No se encontró una solución estable: revisa fuentes en conflicto, componentes sin retorno y conexiones.');
    let fault=false;
    sources.forEach((n,i)=>lastBranch.set(n.id,-solved[other.length+i]));
    for(const n of analog){
@@ -202,10 +208,18 @@
      const active=n.type==='BUZZER'?Math.abs(v)>=number(n,'threshold',3)&&Math.abs(i)>.00001:
        n.type==='LAMP'||n.type.startsWith('LED_')?power>.01:Math.abs(i)>1e-6;
      if(Math.abs(i)>20||Math.abs(power)>1000)fault=true;
+     if(n.type.startsWith('LED_') && Math.abs(i)>.03){
+       warnings.push(`⚠ LED ${n.label}: ${(Math.abs(i)*1000).toFixed(1)} mA sin limitación suficiente. Añade una resistencia en serie (p. ej., 220–1000 Ω).`);
+       fault=true;
+     }
      if(n.type==='CAP_POL' && v<-.5)warnings.push(`Capacitor polarizado ${n.label}: polaridad inversa calculada; posible daño real (no modelado).`);
      if(n.type==='FUSE'&&Math.abs(i)>number(n,'rating',1))warnings.push(`Fusible ${n.label}: corriente calculada supera su valor nominal; NO se abre automáticamente.`);
      readings.set(n.id,{supported:true,current:i,voltage:v,power,active});
    }
+   const activeSources=sources.filter(n=>Math.abs(sourceVoltage(n,timeSeconds))>.2);
+   const diodes=valid.filter(n=>DIODES.has(n.type));
+   if(activeSources.length&&diodes.length&&!diodes.some(n=>Math.abs(readings.get(n.id)?.current||0)>1e-6))
+     warnings.push('Los diodos no conducen: comprueba polaridad, continuidad y conexiones. En un LED el ánodo (A) va hacia + y el cátodo (K) hacia −, con resistencia limitadora.');
    if(valid.some(n=>['BUZZER','PIEZO','SPEAKER','LAMP','MOTOR'].includes(n.type)))warnings.push('Los actuadores/altavoces son cargas resistivas equivalentes: no se predice sonido, giro, temperatura ni dinámica mecánica.');
    if(valid.some(n=>n.type==='SOLAR'))warnings.push('Celda solar: modelo fotocorriente + diodo/shunt idealizado, sin curva calibrada ni efecto térmico.');
    if(valid.some(n=>['DIODE_TVS','DIODE_POWER','DIODE_FAST'].includes(n.type)))warnings.push('Diodos: modelo estático sin recuperación inversa, capacitancia parásita ni límite térmico.');
