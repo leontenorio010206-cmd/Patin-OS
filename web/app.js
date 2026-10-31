@@ -274,7 +274,7 @@
      const countPins=TYPES[t].pins||2;
      for(let i=0;i<countPins;i++){
        const q=posAnalog(n,i),status=reading?.supported?(reading.active?'#42ef85':'#969da4'):'#efc36a';
-       const labels=(t==='NPN'||t==='PNP')?['B','C','E']:(t==='NMOS'||t==='PMOS')?['G','D','S']:(t==='OPAMP'?['+','−','OUT']:['−','+']);
+       const labels=(t==='NPN'||t==='PNP')?['B','C','E']:(t==='NMOS'||t==='PMOS')?['G','D','S']:(t==='OPAMP'?['+','−','OUT']:t.startsWith('LED_')||t.startsWith('DIODE_')||t==='PHOTODIODE'?['A','K']:['−','+']);
        ports+=`<circle class="port-hit" data-kind="analog-pin" data-node="${n.id}" data-pin="${i}" cx="${q.x}" cy="${q.y}" r="19"/><circle class="port" cx="${q.x}" cy="${q.y}" r="8.5" fill="${status}"/><text class="component-mini" x="${q.x+(i===0?-12:i===1?12:0)}" y="${q.y+(i===2?19:-13)}" text-anchor="middle">${labels[i]}</text>`;
      }
    } else {
@@ -289,13 +289,33 @@
       <rect data-kind="node" data-node="${n.id}" x="${n.x-43}" y="${n.y-43}" width="86" height="132" fill="transparent" pointer-events="all"/>${body}<text class="gate-caption" x="${n.x}" y="${n.y+53}">${title}</text><text class="component-properties" x="${n.x}" y="${n.y+68}">${escapeHtml(propBrief(n))}</text>${analog?`<text class="component-reading" x="${n.x}" y="${n.y+83}">${readingText}</text>`:''}${ports}</g>`;
  }
  function wirePath(a,b){const c=Math.max(50,Math.abs(b.x-a.x)*.38);return`M ${a.x} ${a.y} C ${a.x+c} ${a.y}, ${b.x-c} ${b.y}, ${b.x} ${b.y}`;}
+ // Detect conventionally directed electrical current using BOTH connected endpoints.
+ function analogWireFlow(w,a,b){
+   const ra=analogState.readings.get(a.id),rb=analogState.readings.get(b.id);
+   if(!ra?.supported && !rb?.supported)return 0;
+   const out=(r,p)=>r?.supported&&Number.isFinite(r.current)?(p===1?1:-1)*r.current:null;
+   const ia=out(ra,w.fromPin??1),ib=out(rb,w.toPin??0);
+   const threshold=1e-6;
+   if(ia!==null&&Math.abs(ia)>threshold && ib!==null&&Math.abs(ib)>threshold){
+     if(ia>0&&ib<0)return 1;
+     if(ia<0&&ib>0)return -1;
+     return Math.abs(ia)>=Math.abs(ib)?Math.sign(ia):-Math.sign(ib);
+   }
+   if(ia!==null&&Math.abs(ia)>threshold)return Math.sign(ia);
+   if(ib!==null&&Math.abs(ib)>threshold)return -Math.sign(ib);
+   return 0;
+ }
  function render(){board.setAttribute('viewBox',`${view.x} ${view.y} ${view.w} ${view.h}`);
   const nodeMap=new Map(nodes.map(n=>[n.id,n]));let html='';
   for(const w of wires){const a=nodeMap.get(w.from),b=nodeMap.get(w.to);if(!a||!b)continue;
-   const d=wirePath(wireEndpoint(w,'from',a),wireEndpoint(w,'to',b));const analog=TYPES[a.type]?.domain==='analog';const report=analogState.readings.get(a.id);const v=analog?(report?.supported && report?.current!=null?(Math.abs(report.current)>1e-6?1:0):null):lastState.outs.get(a.id);
+   const ptA=wireEndpoint(w,'from',a),ptB=wireEndpoint(w,'to',b);
+   const d=wirePath(ptA,ptB),analog=TYPES[a.type]?.domain==='analog';
+   const flow=analog?analogWireFlow(w,a,b):lastState.outs.get(a.id)===1?1:0;
+   const signal=flow===0?(analogState.readings.get(a.id)?.supported&&analog?0:analog?null:lastState.outs.get(a.id)):1;
+   const motionPath=flow<0?wirePath(ptB,ptA):d;
    html+=`<g data-kind="wire" data-wire="${w.id}"><path class="wire-back ${deleteMode?'wire-delete':''}" d="${d}"/>
-   <path class="${v===1?'wire-energized':v===0?'wire-low':'wire-open'}" d="${d}"/>
-   ${v===1?`<path class="flow-chevron" d="M -9 -6 L 0 0 L -9 6"><animateMotion dur="1.8s" rotate="auto" repeatCount="indefinite" ${analog&&report?.current<0?'keyPoints="1;0" keyTimes="0;1" calcMode="linear"':''} path="${d}"/></path>`:''}</g>`;
+   <path class="${flow!==0?'wire-energized':signal===0?'wire-low':'wire-open'}" d="${d}"/>
+   ${flow!==0?`<path class="flow-chevron" d="M -9 -6 L 0 0 L -9 6"><animateMotion dur="1.8s" rotate="auto" repeatCount="indefinite" path="${motionPath}"/></path>`:''}</g>`;
   }
   if(lastWireMarkup!==html){wiresLayer.innerHTML=html;lastWireMarkup=html;}
   nodesLayer.innerHTML=nodes.map(n=>nodeSvg(n,lastState.outs.get(n.id))).join('');
@@ -303,8 +323,16 @@
   else if(pendingWire){const src=nodeMap.get(pendingWire);if(src){const a=posOutput(src);let b=mousePreview||{x:a.x+100,y:a.y};overlay.innerHTML=`<path class="wire-preview" d="${wirePath(a,b)}"/>`;}else pendingWire=null;}
   else if(pendingInput){const target=nodeMap.get(pendingInput.node);if(target){const b=posInput(target,pendingInput.index);overlay.innerHTML=`<circle class="pending-ring" cx="${b.x}" cy="${b.y}" r="21"/>`;}else pendingInput=null;}
   else overlay.innerHTML='';
+  const legend=$('signalLegend');if(legend)legend.innerHTML=workspace==='electronics'?'<span><i class="green"></i> Corriente calculada</span><span><i class="gray"></i> Sin corriente</span><span><i class="amber"></i> Sin solución</span>':'<span><i class="green"></i> HIGH (1)</span><span><i class="gray"></i> LOW (0)</span><span><i class="amber"></i> Sin señal</span>';
+  const summary=$('signalSummary');if(summary){
+    if(workspace==='electronics'){
+      const currents=[...analogState.readings.values()].filter(r=>r?.supported&&Number.isFinite(r.current)).map(r=>Math.abs(r.current));
+      const maxI=Math.max(0,...currents);
+      summary.textContent=maxI>1e-6?'CORRIENTE: '+(maxI*1000).toFixed(2)+' mA':'SIN CORRIENTE';
+    }else summary.innerHTML='SEÑAL LÓGICA: <b class="high-word">1 / HIGH</b>';
+  }
   $('statNodes').textContent=nodes.length+' componentes';$('statWires').textContent=wires.length+' conexiones';
-  $('hint').textContent=deleteMode?'Modo borrar: toca un cable o componente':pendingWire?'Arrastra o toca una entrada para conectar':pendingInput?'Toca una salida para conectar':'Arrastra terminal a terminal · Mantén presionado para propiedades';
+  $('hint').textContent=deleteMode?'Modo borrar: toca un cable o componente':pendingWire?'Arrastra o toca una entrada para conectar':pendingInput?'Toca una salida para conectar':workspace==='electronics'?'Conecta + a A y K a − usando resistencia en serie · Mantén pulsado para propiedades':'Arrastra terminal a terminal · Mantén presionado para propiedades';
  }
  let mousePreview=null,lastWireMarkup=null;
  function refresh(){lastState=simulate(nodes,wires,clockState,performance.now(),logicMemory);logicMemory=lastState.state;analogState=simulateSpice(nodes,wires,performance.now()/1000,analogState.state);render();refreshScopeSelect();drawScope();
