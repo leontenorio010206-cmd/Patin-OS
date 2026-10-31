@@ -384,7 +384,12 @@
   $('hint').textContent=deleteMode?'Modo borrar: toca un cable o componente':pendingWire?'Arrastra o toca una entrada para conectar':pendingInput?'Toca una salida para conectar':workspace==='electronics'?'Conecta + a A y K a − usando resistencia en serie · Mantén pulsado para propiedades':'Arrastra terminal a terminal · Mantén presionado para propiedades';
  }
  let mousePreview=null,lastWireMarkup=null;
- function refresh(){lastState=simulate(nodes,wires,clockState,performance.now(),logicMemory);logicMemory=lastState.state;analogState=simulateSpice(nodes,wires,performance.now()/1000,analogState.state);audio.update(workspace==='electronics'&&running?nodes:[],wires,analogState.readings);render();refreshScopeSelect();drawScope();
+ function refresh(){
+  const now=performance.now();
+  // Run only the engine for the active workspace, reducing mobile CPU load.
+  if(workspace==='logic'){lastState=simulate(nodes,wires,clockState,now,logicMemory);logicMemory=lastState.state;}
+  else analogState=simulateSpice(nodes,wires,now/1000,analogState.state);
+  audio.update(workspace==='electronics'&&running?nodes:[],wires,analogState.readings);render();refreshScopeSelect();drawScope();
   if(!lastState.stable)showMessage('Oscilación detectada: ciclo sin estabilizar');refreshAnalogStatus();
  }
  function refreshAnalogStatus(){const e=$('analogStatus');if(!e)return;
@@ -624,6 +629,18 @@
  $('newBtn').onclick=newProject;$('sampleBtn').onclick=()=>{snapshot();importFeedback('');demo();};$('undoBtn').onclick=undo;
  $('clearBtn').onclick=()=>{if(!confirm('¿Borrar todos los componentes de este laboratorio?'))return;snapshot();nodes=[];wires=[];logicMemory={registers:{}};scopeId=null;pendingWire=null;pendingInput=null;trace.length=0;persist();refresh();};
  $('deleteModeBtn').onclick=()=>{deleteMode=!deleteMode;$('deleteModeBtn').classList.toggle('on',deleteMode);pendingWire=null;pendingInput=null;refresh();};
+ let lastStageSize={w:0,h:0},resizeHandle=0;
+ function adjustStageSize(){
+   const rect=stage.getBoundingClientRect();if(rect.width<20||rect.height<20)return;
+   if(lastStageSize.w>0&&Math.abs(rect.width-lastStageSize.w)+Math.abs(rect.height-lastStageSize.h)>1){
+     const unitsPerPixel=view.w/lastStageSize.w,cx=view.x+view.w/2,cy=view.y+view.h/2;
+     view.w=rect.width*unitsPerPixel;view.h=rect.height*unitsPerPixel;
+     view.x=cx-view.w/2;view.y=cy-view.h/2;render();
+   }
+   lastStageSize={w:rect.width,h:rect.height};
+ }
+ window.addEventListener('resize',()=>{clearTimeout(resizeHandle);resizeHandle=setTimeout(adjustStageSize,120);});
+ adjustStageSize();
  $('zoomInBtn').onclick=()=>zoom(.8);$('zoomOutBtn').onclick=()=>zoom(1.25);$('zoomResetBtn').onclick=()=>{fitCircuit();render();};
  $('runBtn').onclick=()=>{updateRun();audio.update(workspace==='electronics'&&running?nodes:[],wires,analogState.readings);};$('saveBtn').onclick=exportProject;$('spiceBtn').onclick=saveSpice;
  $('audioBtn').onclick=async()=>{
@@ -632,7 +649,7 @@
    catch(error){audio.stop();showMessage('Audio no disponible: '+error.message);}
  };
  $('audioVolume').oninput=e=>{const v=Number(e.target.value);audio.setVolume(v);$('audioVolumeValue').textContent=v+'%';};
- document.addEventListener('visibilitychange',()=>{if(document.hidden&&audio.enabled){audio.stop();$('audioBtn').setAttribute('aria-pressed','false');$('audioBtn').firstChild.textContent='🔇 ';$('audioPanel').hidden=true;}});
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden){clockTime=performance.now();refresh();}if(document.hidden&&audio.enabled){audio.stop();$('audioBtn').setAttribute('aria-pressed','false');$('audioBtn').firstChild.textContent='🔇 ';$('audioPanel').hidden=true;}});
  window.addEventListener('pagehide',()=>audio.stop());
  window.PatinosPauseAudio=()=>{audio.stop();$('audioBtn').setAttribute('aria-pressed','false');$('audioBtn').firstChild.textContent='🔇 ';$('audioPanel').hidden=true;};
  
@@ -640,14 +657,23 @@
  $('fileInput').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;if(f.size>2000000){showMessage('Archivo demasiado grande');return;}importProject(await f.text());e.target.value='';};
  $('scopeSelect').onchange=e=>{scopeId=e.target.value;trace.length=0;drawScope();};
  document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key.toLowerCase()==='z'){e.preventDefault();undo();}if(e.key==='Escape'){pendingPort=null;pendingWire=null;pendingInput=null;deleteMode=false;$('deleteModeBtn').classList.remove('on');render();}});
+ let lastScopePaint=0,lastStatusPaint=0;
  setInterval(()=>{
-  if(!running)return;
+  if(!running||document.hidden)return;
   const now=performance.now();if(now-clockTime>=500){clockState=1-clockState;clockTime=now;}
-  const nextState=simulate(nodes,wires,clockState,now,logicMemory);logicMemory=nextState.state;const nextAnalog=simulateSpice(nodes,wires,now/1000,analogState.state);const currentFingerprint=JSON.stringify([...nextAnalog.readings.values()].map(r=>[r.active,Math.round((r.current||0)*10000),Math.round((r.voltage||0)*1000)]));const priorFingerprint=JSON.stringify([...analogState.readings.values()].map(r=>[r.active,Math.round((r.current||0)*10000),Math.round((r.voltage||0)*1000)]));analogState=nextAnalog;
+  const nextState=workspace==='logic'?simulate(nodes,wires,clockState,now,logicMemory):lastState;
+  if(workspace==='logic')logicMemory=nextState.state;
+  const nextAnalog=workspace==='electronics'?simulateSpice(nodes,wires,now/1000,analogState.state):analogState;
+  const fingerprint=r=>JSON.stringify([...r.readings.values()].map(v=>[v.active,Math.round((v.current||0)*10000),Math.round((v.voltage||0)*1000)]));
+  const currentFingerprint=workspace==='electronics'?fingerprint(nextAnalog):'';
+  const priorFingerprint=workspace==='electronics'?fingerprint(analogState):'';
+  analogState=nextAnalog;
   const changed=nodes.some(n=>nextState.outs.get(n.id)!==lastState.outs.get(n.id));lastState=nextState;
   audio.update(workspace==='electronics'&&running?nodes:[],wires,analogState.readings);
   trace.push(TYPES[nodes.find(n=>n.id===scopeId)?.type]?.domain==='analog'?(analogState.readings.get(scopeId)?.voltage??null):(lastState.outs.get(scopeId)??null));if(trace.length>120)trace.shift();
-  if((changed||currentFingerprint!==priorFingerprint)&&!gesture)render();drawScope();refreshAnalogStatus();
+  if((changed||currentFingerprint!==priorFingerprint)&&!gesture)render();
+  if(now-lastScopePaint>=180){drawScope();lastScopePaint=now;}
+  if(workspace==='electronics'&&now-lastStatusPaint>=270){refreshAnalogStatus();lastStatusPaint=now;}
   if(nextAnalog.fault && now-analogFaultAt>5000){analogFaultAt=now;const n=nodes.find(n=>Math.abs(nextAnalog.readings.get(n.id)?.current||0)>20);if(n)sparks(n.x,n.y,'⚠ Posible cortocircuito/sobrecarga: revisa el circuito');}
   if(!nextState.stable && (!window.lastFaultAt || performance.now()-window.lastFaultAt>3500)){
     window.lastFaultAt=performance.now();const n=nodes.find(n=>TYPES[n.type].in>0);

@@ -44,6 +44,7 @@ jobs:
           node tests/v093.test.cjs
           node tests/v094.test.cjs
           node tests/v095.test.cjs
+          node tests/v096.test.cjs
       - name: Compilar APK
         run: gradle --no-daemon :app:assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
@@ -57,15 +58,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          TAG="v0.9.5-alpha"
+          TAG="v0.9.6-rc1"
           APK="app/build/outputs/apk/debug/app-debug.apk"
-          cp "$APK" Patin-OS-v0.9.5-alpha-debug.apk
+          cp "$APK" Patin-OS-v0.9.6-rc1-debug.apk
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" Patin-OS-v0.9.5-alpha-debug.apk --clobber
+            gh release upload "$TAG" Patin-OS-v0.9.6-rc1-debug.apk --clobber
           else
-            gh release create "$TAG" Patin-OS-v0.9.5-alpha-debug.apk \
+            gh release create "$TAG" Patin-OS-v0.9.6-rc1-debug.apk \
               --target "$GITHUB_SHA" \
-              --title "Patiñ Os v0.9.5 Alpha (APK Android)" \
-              --notes "Buzzer activo audible con DC; altavoz y piezo con fuentes AC o pulsadas. Audio local Web Audio con activación explícita." \
+              --title "Patiñ Os v0.9.6 RC1 (APK de prueba)" \
+              --notes "Candidata v0.9.6: rendimiento por laboratorio, rotación y compatibilidad Android. APK firmado para depuración, no para producción. Respalda proyectos antes de cambiar de versión." \
               --prerelease
           fi

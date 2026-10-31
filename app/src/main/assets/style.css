@@ -91,3 +91,12 @@ svg{shape-rendering:geometricPrecision;text-rendering:geometricPrecision}
 #audioBtn[aria-pressed=true]{background:#215036;border-color:#35de83;color:#fff;}
 #audioBtn:focus-visible,#audioVolume:focus-visible{outline:2px solid #40f395;outline-offset:2px;}
 @media(max-width:760px){.audio-panel{padding:8px 12px;gap:7px}.audio-panel label{font-size:11px}.audio-panel small{font-size:10px}.header-tools #audioBtn span{display:none;}}
+
+/* 0.9.6 RC: low-motion accessibility and smaller/foldable screens */
+@media(prefers-reduced-motion:reduce){
+ .wire-energized{animation:none;stroke-dashoffset:0;filter:none}
+ .flow-chevron{display:none}.spark-flash,.spark-particle{animation:none;opacity:0}
+ .tool,.action,#toast{transition:none}
+}
+@media(max-width:360px){.header-tools{gap:2px}.action{padding:7px 6px}.canvas-controls{gap:3px}.canvas-controls button{min-width:31px;padding:6px}.canvas-hint{max-width:calc(100% - 12px)}.ribbon{padding:0 8px}.legend{max-width:calc(100% - 20px);flex-wrap:wrap}}
+@media(orientation:landscape) and (max-height:520px){.app{min-height:0}.sidebar{height:112px}.workarea{min-height:0}.bottom{height:110px}.svg-box{min-height:150px}.canvas-hint{font-size:10px}}

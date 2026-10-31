@@ -52,6 +52,8 @@ public class MainActivity extends Activity {
         setContentView(shell);
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
+        settings.setMediaPlaybackRequiresUserGesture(true);
+        WebView.setWebContentsDebuggingEnabled(false);
         settings.setDomStorageEnabled(true);
         settings.setAllowFileAccess(true);  // android_asset only; do not load untrusted URLs.
         settings.setAllowContentAccess(true);
@@ -75,6 +77,7 @@ public class MainActivity extends Activity {
 
     public class NativeBridge {
         @JavascriptInterface public void saveJson(String json) {
+            if (json == null || json.length() > 2_000_000) return;
             pendingJson = json;
             pendingFileName = "circuito.patinos.json";
             pendingMime = "application/json";
@@ -116,7 +119,10 @@ public class MainActivity extends Activity {
             if (chooserCallback != null) { chooserCallback.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(result, data)); chooserCallback = null; }
             return;
         }
-        if (result != RESULT_OK || data == null || data.getData() == null) return;
+        if (result != RESULT_OK || data == null || data.getData() == null) {
+            if (request == SAVE_PROJECT) pendingJson = null;
+            return;
+        }
         Uri uri = data.getData();
         try {
             if (request == SAVE_PROJECT && pendingJson != null) {
@@ -167,6 +173,6 @@ public class MainActivity extends Activity {
     }
 
     private void toastJs(String message) {
-        web.evaluateJavascript("window.showMessage(" + JSONObject.quote(message) + ")", null);
+        if (web != null) web.evaluateJavascript("window.showMessage(" + JSONObject.quote(message) + ")", null);
     }
 }

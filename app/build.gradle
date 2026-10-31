@@ -7,10 +7,28 @@ android {
         applicationId 'com.patinos.simulator'
         minSdk 26
         targetSdk 35
-        versionCode 15
-        versionName '0.9.5-alpha'
+        versionCode 16
+        versionName '0.9.6-rc1'
+    }
+    signingConfigs {
+        production {
+            // The private signing key is injected by CI; never commit it to source.
+            def keyPath = System.getenv('PATINOS_KEYSTORE_PATH')
+            if (keyPath) {
+                storeFile file(keyPath)
+                storePassword System.getenv('PATINOS_STORE_PASSWORD')
+                keyAlias System.getenv('PATINOS_KEY_ALIAS')
+                keyPassword System.getenv('PATINOS_KEY_PASSWORD')
+            }
+        }
     }
     buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (System.getenv('PATINOS_KEYSTORE_PATH')) signingConfig signingConfigs.production
+        }
         debug {
             minifyEnabled true
             shrinkResources true
