@@ -1,0 +1,64 @@
+{
+  "format": "digital-flow-v1",
+  "nodes": [
+    {
+      "id": "src",
+      "type": "VDC",
+      "x": 160,
+      "y": 235,
+      "label": "Fuente 5V",
+      "state": 0,
+      "props": {
+        "voltage": 5
+      }
+    },
+    {
+      "id": "res",
+      "type": "RESISTOR",
+      "x": 420,
+      "y": 140,
+      "label": "R 220Ω",
+      "state": 0,
+      "props": {
+        "resistance": 220
+      }
+    },
+    {
+      "id": "led",
+      "type": "LED_GREEN",
+      "x": 685,
+      "y": 235,
+      "label": "LED verde",
+      "state": 0,
+      "props": {
+        "forwardVoltage": 2.2
+      }
+    }
+  ],
+  "wires": [
+    {
+      "id": "wa",
+      "from": "res",
+      "fromPin": 0,
+      "to": "src",
+      "toPin": 1,
+      "input": 0
+    },
+    {
+      "id": "wb",
+      "from": "res",
+      "fromPin": 1,
+      "to": "led",
+      "toPin": 0,
+      "input": 0
+    },
+    {
+      "id": "wc",
+      "from": "src",
+      "fromPin": 0,
+      "to": "led",
+      "toPin": 1,
+      "input": 0
+    }
+  ]
+}
