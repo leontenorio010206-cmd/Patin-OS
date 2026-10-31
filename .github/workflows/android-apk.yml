@@ -5,6 +5,8 @@ on:
     branches: [main, master]
     paths:
       - 'app/**'
+      - 'tests/**'
+      - 'web/**'
       - 'settings.gradle'
       - 'build.gradle'
       - 'gradle.properties'
