@@ -58,15 +58,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          TAG="v0.9.6-rc1"
+          TAG="v0.9.6.1-rc2"
           APK="app/build/outputs/apk/debug/app-debug.apk"
-          cp "$APK" Patin-OS-v0.9.6-rc1-debug.apk
+          cp "$APK" Patin-OS-v0.9.6.1-rc2-debug.apk
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" Patin-OS-v0.9.6-rc1-debug.apk --clobber
+            gh release upload "$TAG" Patin-OS-v0.9.6.1-rc2-debug.apk --clobber
           else
-            gh release create "$TAG" Patin-OS-v0.9.6-rc1-debug.apk \
+            gh release create "$TAG" Patin-OS-v0.9.6.1-rc2-debug.apk \
               --target "$GITHUB_SHA" \
-              --title "Patiñ Os v0.9.6 RC1 (APK de prueba)" \
-              --notes "Candidata v0.9.6: rendimiento por laboratorio, rotación y compatibilidad Android. APK firmado para depuración, no para producción. Respalda proyectos antes de cambiar de versión." \
+              --title "Patiñ Os v0.9.6.1 RC2 (APK de prueba)" \
+              --notes "Versión candidata: reducción de trabajo por laboratorio, compatibilidad con rotación/multiventana y controles de seguridad. Es un APK firmado para depuración; para una versión definitiva hay que usar firma de producción estable y pruebas en dispositivos." \
               --prerelease
           fi

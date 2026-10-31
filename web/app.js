@@ -640,6 +640,8 @@
    lastStageSize={w:rect.width,h:rect.height};
  }
  window.addEventListener('resize',()=>{clearTimeout(resizeHandle);resizeHandle=setTimeout(adjustStageSize,120);});
+ if(typeof ResizeObserver!=='undefined'){let stageFrame=0;new ResizeObserver(()=>{cancelAnimationFrame(stageFrame);stageFrame=requestAnimationFrame(adjustStageSize);}).observe(stage);}
+
  adjustStageSize();
  $('zoomInBtn').onclick=()=>zoom(.8);$('zoomOutBtn').onclick=()=>zoom(1.25);$('zoomResetBtn').onclick=()=>{fitCircuit();render();};
  $('runBtn').onclick=()=>{updateRun();audio.update(workspace==='electronics'&&running?nodes:[],wires,analogState.readings);};$('saveBtn').onclick=exportProject;$('spiceBtn').onclick=saveSpice;

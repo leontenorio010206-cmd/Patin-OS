@@ -1,0 +1,141 @@
+/* Patiñ Os — layout adaptativo RC2. Se carga al final para no alterar el motor.
+ * Diseño responsive por espacio disponible, no por modelo de teléfono. */
+:root { color-scheme: dark; }
+html,body { max-width:100%; overflow:hidden; }
+.app { width:100%; height:100vh; height:100dvh; min-height:0; min-width:0; overflow:hidden; }
+.main { flex:1 1 auto; min-height:0; min-width:0; overflow:hidden; }
+.workarea { min-height:0; min-width:0; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; }
+.sidebar { min-height:0; min-width:0; scrollbar-width:thin; }
+.topbar { min-width:0; }
+.brand { min-width:0; flex:0 1 auto; }
+.brand > div:last-child { min-width:0; }
+.brand strong { display:block; white-space:nowrap; line-height:1.1; letter-spacing:.055em; }
+.brand small { white-space:nowrap; letter-spacing:.055em; }
+.brand-mark { flex:0 0 auto; }
+.header-tools { min-width:0; }
+.action,.canvas-controls button { line-height:1.15; }
+.workspace-tab { min-width:0; }
+.canvas-top > div:first-child { min-width:0; }
+.canvas-top h1 { overflow-wrap:normal; }
+.canvas-controls { min-width:0; }
+.canvas-hint { line-height:1.25; max-width:calc(100% - 20px); }
+.scope-header { gap:8px; }
+.scope-header label { min-width:0; display:flex; align-items:center; gap:6px; }
+.scope-header select { min-width:0; max-width:100%; }
+.tool-controls { min-width:0; }
+#tools { scrollbar-width:thin; }
+.props-dialog { max-height:min(86dvh,760px); }
+
+/* Teléfonos en vertical, incluso si el usuario usa letra grande o pantalla dividida. */
+@media (max-width:760px) and (orientation:portrait) {
+  .app { display:flex; flex-direction:column; }
+  .topbar {
+    height:auto; flex:0 0 auto; display:grid; grid-template-columns:minmax(0,1fr);
+    justify-content:stretch; align-items:stretch; row-gap:7px;
+    padding:8px 10px 7px;
+  }
+  .brand { width:100%; gap:9px; align-items:center; }
+  .brand-mark { width:34px; height:34px; line-height:32px; font-size:25px; }
+  .brand strong { font-size:clamp(15px,4.2vw,20px); }
+  .brand small { font-size:9px; margin-top:2px; }
+  .alpha { font-size:9px; padding:2px 5px; }
+  .header-tools { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:6px; width:100%; }
+  .header-tools .action { width:100%; min-width:0; min-height:44px; height:44px; padding:4px; font-size:20px; border-radius:10px; }
+  .header-tools .action span { display:none; }
+  .workspace-tabs { flex:0 0 auto; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; padding:6px 10px; }
+  .workspace-tab { min-height:43px; padding:7px 5px; font-size:clamp(10px,2.9vw,13px); white-space:normal; text-align:center; }
+  .workspace-tab small { display:none; }
+  .audio-panel { flex:0 0 auto; padding:7px 10px; gap:6px; }
+  .audio-panel label { font-size:12px; }
+  .audio-panel small { display:none; }
+  .audio-panel input[type=range] { min-width:55px; }
+  .ribbon { flex:0 0 auto; height:auto; min-height:34px; padding:6px 10px; gap:7px; font-size:10px; letter-spacing:0; }
+  .ribbon .dotsep,#statWires { display:none; }
+  #signalSummary { max-width:47%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:9px; }
+  .main { display:flex; flex-direction:column; flex:1 1 auto; min-height:0; }
+  .workarea { order:1; flex:1 1 auto; display:block; overflow-y:auto; padding:11px 10px 14px; }
+  .canvas-top { display:grid; grid-template-columns:minmax(0,1fr); row-gap:9px; align-items:start; margin-bottom:10px; }
+  .canvas-top h1 { font-size:clamp(16px,4vw,21px); line-height:1.2; margin-top:2px; }
+  .eyebrow { font-size:10px; }
+  .canvas-controls { width:100%; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:7px; }
+  .canvas-controls button { min-width:0; height:42px; padding:5px 2px; font-size:17px; }
+  .canvas-controls button span { display:none; }
+  .svg-box { flex:0 0 auto; height:clamp(285px,45dvh,550px); min-height:285px; border-radius:12px; }
+  .canvas-hint { top:10px; left:10px; right:10px; width:max-content; max-width:calc(100% - 20px); padding:7px 10px; font-size:11px; }
+  .legend { bottom:10px; left:10px; right:10px; width:max-content; max-width:calc(100% - 20px); flex-wrap:wrap; font-size:10px; gap:7px 10px; padding:7px 9px; }
+  .analog-status,.import-status { margin-top:9px; max-height:none; overflow:visible; font-size:11px; }
+  .bottom { flex:0 0 auto; height:auto; min-height:158px; padding:12px 11px 9px; margin-top:11px; border-radius:11px; }
+  .scope-header { flex-wrap:wrap; align-items:center; }
+  .scope-header h2 { font-size:14px; }
+  .scope-header label { font-size:10px; }
+  .scope-header select { max-width:135px; min-height:34px; }
+  #scope { height:85px; margin-top:8px; }
+  .scope-footer { font-size:9px; gap:8px; flex-wrap:wrap; }
+  .sidebar { order:2; width:100%; height:clamp(163px,24dvh,205px); flex:0 0 auto; overflow:hidden; padding:10px 10px 8px; border-top:1px solid var(--edge); border-right:0; }
+  .sidebar > .section-head,.sidebar .side-actions,.sidebar .tip { display:none; }
+  .tool-controls { display:grid; grid-template-columns:minmax(0,1fr) minmax(106px,37%); align-items:center; gap:8px; height:38px; margin:0 0 8px; }
+  .tool-controls input,.tool-controls select { width:100%; min-width:0; height:38px; min-height:38px; font-size:13px; }
+  .tool-grid { display:flex; flex-wrap:nowrap; gap:8px; width:100%; max-width:100%; height:calc(100% - 46px); overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; padding-bottom:3px; }
+  .tool { flex:0 0 clamp(95px,27vw,135px); min-width:0; min-height:0; height:100%; padding:5px 7px; gap:4px; }
+  .tool .glyph { font-size:26px; }
+  .tool span:last-child { overflow-wrap:anywhere; text-align:center; font-size:11px; }
+  .tool .model-type { font-size:9px; }
+  footer { display:none; }
+}
+/* Horizontal compact phones: panel on the left and independently scrollable editor. */
+@media (orientation:landscape) and (max-height:560px) {
+  .app { min-height:0; }
+  .topbar { display:flex; height:51px; min-height:51px; padding:5px 11px; gap:8px; align-items:center; }
+  .brand { flex:0 1 auto; }
+  .brand strong { font-size:14px; }
+  .brand small { font-size:8px; }
+  .brand-mark { width:30px; height:30px; line-height:28px; font-size:23px; }
+  .header-tools { display:flex; margin-left:auto; gap:5px; width:auto; }
+  .header-tools .action { min-width:36px; width:38px; height:38px; min-height:38px; font-size:18px; padding:3px; }
+  .header-tools .action span { display:none; }
+  .workspace-tabs { padding:4px 9px; }
+  .workspace-tab { min-height:34px; font-size:11px; padding:4px 8px; }
+  .workspace-tab small { display:none; }
+  .ribbon { height:27px; min-height:27px; padding:4px 11px; }
+  .audio-panel { padding:5px 10px; }
+  .audio-panel small { display:none; }
+  .main { display:flex; flex-direction:row; min-height:0; }
+  .sidebar { order:0; flex:0 0 clamp(185px,28vw,270px); width:clamp(185px,28vw,270px); height:auto; padding:9px; overflow-y:auto; overflow-x:hidden; border-right:1px solid var(--edge); border-top:0; }
+  .sidebar .section-head { display:flex; }
+  .tool-controls { display:flex; flex-direction:column; height:auto; gap:7px; }
+  .tool-controls input,.tool-controls select { width:100%; height:36px; min-height:36px; }
+  .tool-grid { display:grid; width:100%; grid-template-columns:repeat(2,minmax(0,1fr)); height:auto; overflow:visible; gap:7px; }
+  .tool { min-width:0; min-height:86px; height:auto; }
+  .workarea { order:1; flex:1 1 auto; display:block; min-width:0; min-height:0; padding:9px 12px; overflow-y:auto; }
+  .canvas-top { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:center; margin-bottom:8px; }
+  .canvas-top h1 { font-size:16px; }
+  .canvas-controls { display:flex; gap:5px; width:auto; }
+  .canvas-controls button { min-width:35px; min-height:36px; padding:5px; font-size:14px; }
+  .canvas-controls button span { display:none; }
+  .svg-box { flex:0 0 auto; height:clamp(240px,72dvh,500px); min-height:240px; }
+  .canvas-hint { max-width:calc(100% - 20px); font-size:10px; }
+  .bottom { height:auto; min-height:135px; padding:10px; margin-top:9px; }
+  #scope { height:77px; }
+  footer { display:none; }
+}
+/* Tablets/desktops: sidebar stays visible and scope remains accessible by scrolling workarea. */
+@media (min-width:761px) and (min-height:561px) {
+  .topbar { padding-inline:clamp(12px,2vw,24px); gap:12px; }
+  .brand { flex:0 0 auto; }
+  .header-tools { gap:clamp(4px,.65vw,9px); flex-wrap:nowrap; }
+  .header-tools .action { min-width:37px; white-space:nowrap; }
+  .sidebar { width:clamp(210px,23vw,310px); }
+  .workarea { overflow-y:auto; }
+  .canvas-top { flex-wrap:wrap; row-gap:8px; }
+  .svg-box { min-height:300px; }
+  .bottom { min-height:175px; }
+}
+@media (max-width:1030px) and (min-width:761px) {
+  .header-tools .action span { display:none; }
+  .header-tools .action { font-size:18px; min-width:40px; min-height:40px; padding:6px; }
+}
+/* Narrow split-screen windows should use the vertical layout even when the viewport is short. */
+@media (max-width:760px) and (max-height:560px) and (orientation:portrait) {
+  .svg-box { height:300px; }
+  .sidebar { height:153px; }
+}

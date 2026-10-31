@@ -7,12 +7,12 @@ android {
         applicationId 'com.patinos.simulator'
         minSdk 26
         targetSdk 35
-        versionCode 16
-        versionName '0.9.6-rc1'
+        versionCode 17
+        versionName '0.9.6.1-rc2'
     }
     signingConfigs {
         production {
-            // The private signing key is injected by CI; never commit it to source.
+            // Signing credentials are injected by GitHub Actions, NEVER committed to git.
             def keyPath = System.getenv('PATINOS_KEYSTORE_PATH')
             if (keyPath) {
                 storeFile file(keyPath)
