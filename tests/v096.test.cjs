@@ -10,7 +10,7 @@ test('Android assets match browser assets exactly, avoiding old UI in the APK',(
  for(const name of ['app.js','analog.js','engine.js','devices.js','dig.js','special.js','spice.js','sound.js','leds.js','style.css','index.html'])
   assert.equal(read('web/'+name),read('app/src/main/assets/'+name),name);
 });
-test('release candidate versionCode increments and build release minifies',()=>{
+test('versionCode v1 increments and build release minifies',()=>{
  const b=read('app/build.gradle');assert.match(b,/versionCode\s+17/);assert.match(b,/versionName\s+'0\.9\.6\.1-rc2'/);
  assert.match(b,/release\s*\{[^}]*minifyEnabled true/);
  assert.match(b,/PATINOS_KEYSTORE_PATH/);

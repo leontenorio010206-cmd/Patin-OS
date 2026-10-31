@@ -1,35 +1,26 @@
-# Patiñ Os v0.9.6.1 RC2 — adaptación de pantalla
+# Patiñ Os v1.0.0 — edición privada
 
-Revisión de interfaz sobre la v0.9.6 RC1. No cambia las ecuaciones ni componentes de simulación.
+Simulador educativo local de electrónica y lógica para Android. La versión 1.0.0 consolida la interfaz adaptable, editor de conexiones, instrumentos, componentes electrónicos y experimentos de audio.
 
-- En teléfonos verticales el encabezado dispone acciones en fila propia. El editor se desplaza independientemente y el catálogo queda debajo sin superponer el osciloscopio.
-- En horizontal el catálogo pasa a la izquierda y el editor mantiene desplazamiento independiente.
-- En tablets se conserva el panel lateral. Tamaños adaptativos, áreas táctiles y compatibilidad con reducción de movimiento.
-- ResizeObserver recalcula la vista SVG al cambiar el tamaño del lienzo, conservando el zoom y centro.
-- Se conserva el guardado de los proyectos existentes. Pruebas: `python tests/responsive.test.py` (requiere Chromium y Playwright).
+## Estado de publicación
+- Código en `main`: versión **1.0.0** preparada y sometida a CI.
+- La versión descargable de **producción** exige firma persistente y un repositorio **privado**. El workflow `release-signed.yml` se ejecuta manualmente; **se niega a publicar si el repositorio es público**, si falta un secreto o si no pasan las pruebas.
+- Los APK generados por `android-apk.yml` son **debug**, únicamente para validar; este workflow ya no crea una Release pública automáticamente.
+- La etiqueta **v1.0.0** y la GitHub Release solo aparecen después de que el workflow firmado complete exitosamente.
+- Para distribuir la app al público manteniendo el código privado se necesita un canal de descarga distinto de GitHub Releases privadas: las Releases de un repositorio privado no son accesibles a personas sin permisos.
 
-**Es una candidata de prueba**, no un APK de producción firmado permanentemente. Los modelos eléctricos siguen siendo educativos.
+## Preparar la publicación cerrada
+1. Ve a **Settings → General → Danger Zone → Change repository visibility → Make private**.
+2. Configura en **Settings → Secrets and variables → Actions** cuatro secretos: `PATINOS_KEYSTORE_BASE64`, `PATINOS_STORE_PASSWORD`, `PATINOS_KEY_ALIAS` y `PATINOS_KEY_PASSWORD`. Crea una clave de firma de producción nueva en una computadora de confianza y conserva una copia segura fuera del repositorio. Nunca la subas al código.
+3. Ve a **Actions → Publicar APK firmado de Patiñ Os → Run workflow** en `main`. El workflow prueba, compila, verifica la firma, genera SHA-256 y publica la GitHub Release privada `v1.0.0`.
 
-# Patiñ Os v0.9.6 — candidata a versión estable (RC1)
+**Importante sobre la licencia:** el proyecto tiene licencia GPL-3.0. Hacer privado el repositorio no sustituye las obligaciones de ofrecer el código fuente correspondiente a quienes reciban binarios que contengan código GPL; tampoco revoca copias públicas anteriores.
 
-Patiñ Os es un simulador educativo de electrónica y lógica para Android, que funciona sin conexión. Conserva las funcionalidades y archivos de proyecto de v0.9.5.
+## Alcance y seguridad
+Simulación local digital, fuentes, redes RC/RL, modelos educativos SPICE-lite, LEDs, transformadores aproximados, audio sintético. No sustituye SPICE de precisión industrial, ensayo físico ni certificaciones de seguridad eléctrica.
 
-## Mejoras comprobables en v0.9.6
-- Se ejecuta **un solo motor por laboratorio**: lógica digital o electrónica, no ambos a la vez. Se reduce el uso de CPU y batería.
-- Muestreo del osciloscopio desacoplado del pintado; simulación base cada 90 ms y refresco gráfico más lento. Las animaciones SVG siguen siendo independientes.
-- Se evita procesar simulación cuando la app no está visible; el audio se apaga al salir.
-- Reencuadre de pantalla sin perder zoom al rotar o usar pantalla dividida, y CSS para pantallas pequeñas.
-- Respeta la preferencia de Android de reducir movimientos y animaciones.
-- Guardas de tamaño en el puente JavaScript para exportaciones y manejo de cancelación del selector.
-- R8 y minificación conservados; verificaciones de integridad de recursos web y pruebas automáticas.
+## Pruebas
+`node tests/engine.test.cjs`, `node tests/spice.test.cjs` y `for f in tests/*.test.cjs; do node "$f"; done`.
+Prueba visual responsiva: `python tests/responsive.test.py` con Playwright/Chromium.
 
-## Estado de distribución
-- GitHub Actions genera **APK de depuración RC1** para pruebas públicas.
-- **No etiquetar como estable ni distribuir en Google Play todavía:** falta configurar clave de firma de producción persistente, probar actualizaciones y exportar/respaldar proyectos, realizar pruebas en varios teléfonos, completar ficha de privacidad y validación de requisitos de publicación.
-- El build `release` puede firmarse con variables `PATINOS_KEYSTORE_PATH`, `PATINOS_STORE_PASSWORD`, `PATINOS_KEY_ALIAS`, `PATINOS_KEY_PASSWORD` en un runner seguro, usando secretos de GitHub.
-
-## Pruebas locales
-`node tests/engine.test.cjs`, `node tests/spice.test.cjs`, `node tests/v09.test.cjs` ... `node tests/v096.test.cjs`.
-
-## Limitaciones
-No es ngspice completo ni sustituye cálculos y mediciones de seguridad eléctrica; ciertos componentes tienen modelos simplificados. GPL-3.0: fuente y atribuciones en LICENSE.
+© colaboradores de Patiñ Os. Consulte `LICENSE` para los términos GPL-3.0.

@@ -1,12 +1,22 @@
-name: Publicar APK firmado de Patiñ Os
+name: Publicar APK firmado de Patiñ Os v1.0
 on:
   workflow_dispatch:
+
 permissions:
   contents: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+      - name: Bloquear publicación si el repositorio es público
+        env:
+          PRIVATE_REPO: ${{ github.event.repository.private }}
+        run: |
+          if [ "$PRIVATE_REPO" != "true" ]; then
+            echo "::error::La versión cerrada exige que el repositorio sea privado antes de publicar."
+            exit 1
+          fi
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
@@ -15,10 +25,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Verificar firma de producción disponible
+      - name: Verificar secretos de firma persistente
         env:
           KEYSTORE_BASE64: ${{ secrets.PATINOS_KEYSTORE_BASE64 }}
           STORE_PASSWORD: ${{ secrets.PATINOS_STORE_PASSWORD }}
@@ -30,18 +37,18 @@ jobs:
           test -n "$STORE_PASSWORD" || (echo "::error::Falta PATINOS_STORE_PASSWORD"; exit 1)
           test -n "$KEY_ALIAS" || (echo "::error::Falta PATINOS_KEY_ALIAS"; exit 1)
           test -n "$KEY_PASSWORD" || (echo "::error::Falta PATINOS_KEY_PASSWORD"; exit 1)
-      - name: Instalar SDK Android
+      - name: Instalar Android SDK
         run: |
           set -euo pipefail
           SDKMGR="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)"
           test -n "$SDKMGR"
           yes | "$SDKMGR" --sdk_root="$ANDROID_HOME" --licenses >/dev/null || true
           "$SDKMGR" --sdk_root="$ANDROID_HOME" --install "platforms;android-35" "build-tools;35.0.0"
-      - name: Ejecutar regresiones
+      - name: Ejecutar todas las pruebas JS
         run: |
           set -euo pipefail
           for file in tests/*.test.cjs; do node "$file"; done
-      - name: Compilar APK de producción con firma persistente
+      - name: Compilar y verificar APK firmado
         env:
           KEYSTORE_BASE64: ${{ secrets.PATINOS_KEYSTORE_BASE64 }}
           PATINOS_STORE_PASSWORD: ${{ secrets.PATINOS_STORE_PASSWORD }}
@@ -50,24 +57,26 @@ jobs:
         run: |
           set -euo pipefail
           export PATINOS_KEYSTORE_PATH="$RUNNER_TEMP/patinos-release.jks"
+          trap 'rm -f "$PATINOS_KEYSTORE_PATH"' EXIT
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode >"$PATINOS_KEYSTORE_PATH"
           chmod 600 "$PATINOS_KEYSTORE_PATH"
           gradle --no-daemon :app:assembleRelease --stacktrace
           test -s app/build/outputs/apk/release/app-release.apk
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk
-          cp app/build/outputs/apk/release/app-release.apk Patin-OS-v0.9.6-release.apk
-          rm -f "$PATINOS_KEYSTORE_PATH"
-      - name: Publicar release firmada
+          cp app/build/outputs/apk/release/app-release.apk Patin-OS-v1.0.0-release.apk
+          sha256sum Patin-OS-v1.0.0-release.apk > Patin-OS-v1.0.0-release.apk.sha256
+      - name: Publicar versión privada v1.0.0
         env:
           GH_TOKEN: ${{ github.token }}
+          PRIVATE_REPO: ${{ github.event.repository.private }}
         run: |
           set -euo pipefail
-          test ! -z "$(ls Patin-OS-v0.9.6-release.apk)"
-          if gh release view v0.9.6 >/dev/null 2>&1; then
-            echo "::error::La publicación v0.9.6 ya existe. Revisar manualmente antes de reemplazar una firma."
+          test "$PRIVATE_REPO" = "true"
+          if gh release view v1.0.0 >/dev/null 2>&1; then
+            echo "::error::La etiqueta v1.0.0 ya existe; no sobrescribir una versión definitiva."
             exit 1
           fi
-          gh release create v0.9.6 Patin-OS-v0.9.6-release.apk \
+          gh release create v1.0.0 Patin-OS-v1.0.0-release.apk Patin-OS-v1.0.0-release.apk.sha256 \
             --target "$GITHUB_SHA" \
-            --title "Patiñ Os v0.9.6 — APK firmado" \
-            --notes "APK firmado de producción. Exporta proyectos antes de migrar desde APKs debug: las firmas diferentes no permiten actualizar encima."
+            --title "Patiñ Os v1.0.0" \
+            --notes "Primera versión 1.0 con firma de producción persistente. Compatible con Android 8+. Modelos eléctricos educativos, no mediciones físicas. Exporta proyectos antes de migrar desde APKs debug; las firmas son diferentes."
