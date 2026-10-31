@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="style.css"/></head><body>
 <div class="app">
   <header class="topbar">
-    <div class="brand"><div class="brand-mark">◈</div><div><strong>PATIÑ <em>OS</em></strong><small>LAB / ANDROID <span class="alpha">ALPHA 0.9</span></small></div></div>
+    <div class="brand"><div class="brand-mark">◈</div><div><strong>PATIÑ <em>OS</em></strong><small>LAB / ANDROID <span class="alpha">ALPHA 0.9.1</span></small></div></div>
     <div class="header-tools">
       <button id="newBtn" class="action" title="Nuevo proyecto" aria-label="Nuevo proyecto">＋ <span>Nuevo</span></button>
       <button id="runBtn" class="action primary" title="Pausar o reanudar" aria-label="Pausar o reanudar">❚❚ <span>Pausar</span></button>
@@ -21,7 +21,7 @@
   <div class="ribbon">
     <div class="live-pill"><i></i><b id="liveStatus">SIMULANDO</b></div>
     <span id="statNodes">0 componentes</span><span class="dotsep">·</span><span id="statWires">0 conexiones</span>
-    <span class="ribbon-spacer"></span><span>SEÑAL LÓGICA: <b class="high-word">1 / HIGH</b></span>
+    <span class="ribbon-spacer"></span><span id="signalSummary">SEÑAL LÓGICA: <b class="high-word">1 / HIGH</b></span>
   </div>
   <main class="main">
     <aside class="sidebar">
@@ -43,7 +43,7 @@
           <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
         </defs><rect id="background" width="100%" height="100%" fill="url(#dots)"/><g id="wiresLayer"></g><g id="nodesLayer"></g><g id="overlayLayer"></g><g id="fxLayer" aria-hidden="true"></g></svg>
        <div class="canvas-hint" id="hint">Toca un interruptor para cambiar el nivel lógico</div>
-       <div class="legend"><span><i class="green"></i> HIGH (1)</span><span><i class="gray"></i> LOW (0)</span><span><i class="amber"></i> Sin señal</span></div>
+       <div class="legend" id="signalLegend"><span><i class="green"></i> HIGH (1)</span><span><i class="gray"></i> LOW (0)</span><span><i class="amber"></i> Sin señal</span></div>
       </div>
       <div class="analog-status" id="analogStatus" role="status" hidden></div>
       <div class="import-status" id="importStatus" role="alert" hidden></div>
@@ -54,7 +54,7 @@
       </div>
     </section>
   </main>
-  <footer><span>Patiñ Os v0.9 · Simulación lógica, DC, AC, RC/RL y fotovoltaica, sin internet</span><span>Flujo animado = propagación de señal lógica; <b>la corriente y tensión son cálculos didácticos de MNA, no mediciones físicas.</b></span></footer>
+  <footer><span>Patiñ Os v0.9.1 · Simulación lógica, DC, AC, RC/RL y fotovoltaica, sin internet</span><span>Flujo verde: señal lógica o sentido convencional de corriente calculada; <b>la corriente y tensión son cálculos didácticos de MNA, no mediciones físicas.</b></span></footer>
   <div id="toast" role="status" aria-live="polite"></div>
   <dialog id="propsDialog" class="props-dialog" aria-labelledby="propsTitle"><form id="propsForm" method="dialog"><h2 id="propsTitle">Propiedades</h2><p class="props-description">Mantén presionado cualquier componente para configurar sus parámetros.</p><div id="propsFields"></div><p id="propsHelp" class="props-help"></p><div class="props-actions"><button type="button" id="propsClose">Cancelar</button><button type="submit" class="props-save">Guardar cambios</button></div></form></dialog>
 </div>
