@@ -91,17 +91,28 @@
    update(nodes,wires,readings){
      if(!this.enabled||!this.context||this.context.state!=='running')return;
      const plans=collectPlans(nodes,wires,readings);
-     for(const id of [...this.voices.keys()])if(!plans.has(id))this.remove(id);
+     const byId=new Map(nodes.map(n=>[n.id,n]));
+     for(const id of [...this.voices.keys()])if(!plans.has(id)){
+       const voice=this.voices.get(id),node=byId.get(id);
+       // At AC zero-crossings the slower MNA display can sample zero current.
+       // Hold the last audible state briefly, instead of starting/stopping a
+       // 440 Hz oscillator ten times each second (aliasing/stuttering).
+       const crossing=node&&node.type!=='BUZZER'&&sourceFor(node,nodes,wires)
+         &&this.context.currentTime-voice.lastPositive<.5;
+       if(!crossing)this.remove(id);
+     }
      for(const [id,plan] of plans){
        let voice=this.voices.get(id);
        if(!voice){
          const osc=this.context.createOscillator(),gain=this.context.createGain();
          gain.gain.value=0;osc.connect(gain);gain.connect(this.master);osc.start();
-         voice={osc,gain};this.voices.set(id,voice);
+         voice={osc,gain,lastPositive:this.context.currentTime,level:0};this.voices.set(id,voice);
        }
        voice.osc.type=plan.wave;
+       voice.lastPositive=this.context.currentTime;
+       voice.level=Math.max(plan.level,voice.level*.91);
        voice.osc.frequency.setTargetAtTime(plan.frequency,this.context.currentTime,.015);
-       voice.gain.gain.setTargetAtTime(plan.level,this.context.currentTime,.035);
+       voice.gain.gain.setTargetAtTime(voice.level,this.context.currentTime,.11);
      }
    }
  }
