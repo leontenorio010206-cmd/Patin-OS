@@ -4,10 +4,11 @@
 <link rel="stylesheet" href="style.css"/></head><body>
 <div class="app">
   <header class="topbar">
-    <div class="brand"><div class="brand-mark">◈</div><div><strong>PATIÑ <em>OS</em></strong><small>LAB / ANDROID <span class="alpha">ALPHA 0.9.3</span></small></div></div>
+    <div class="brand"><div class="brand-mark">◈</div><div><strong>PATIÑ <em>OS</em></strong><small>LAB / ANDROID <span class="alpha">ALPHA 0.9.5</span></small></div></div>
     <div class="header-tools">
       <button id="newBtn" class="action" title="Nuevo proyecto" aria-label="Nuevo proyecto">＋ <span>Nuevo</span></button>
       <button id="runBtn" class="action primary" title="Pausar o reanudar" aria-label="Pausar o reanudar">❚❚ <span>Pausar</span></button>
+      <button id="audioBtn" class="action" type="button" aria-pressed="false" title="Activar sonido de buzzer, altavoz y piezo" aria-label="Activar audio">🔇 <span>Audio</span></button>
       <button id="saveBtn" class="action" title="Guardar proyecto" aria-label="Guardar proyecto">▣ <span>Guardar</span></button>
       <button id="spiceBtn" class="action" title="Exportar circuito SPICE .cir" aria-label="Exportar SPICE">⚗ <span>SPICE</span></button>
       <button id="loadBtn" class="action" title="Abrir proyecto" aria-label="Abrir proyecto">▤ <span>Abrir</span></button>
@@ -18,6 +19,7 @@
     <button id="logicModeBtn" class="workspace-tab active" data-workspace="logic" aria-pressed="true">⚙ Lógica digital <small>Compuertas y biestables</small></button>
     <button id="electronicsModeBtn" class="workspace-tab" data-workspace="electronics" aria-pressed="false">⚡ Circuitos electrónicos <small>Fuentes, componentes y mediciones</small></button>
   </nav>
+  <div id="audioPanel" class="audio-panel" hidden><label for="audioVolume">Volumen de Patiñ Os</label><input id="audioVolume" type="range" min="0" max="100" value="25" step="1" aria-label="Volumen de audio"/><output id="audioVolumeValue" for="audioVolume">25%</output><small>Buzzer: funciona con DC sobre su umbral. Altavoz y piezo: requieren fuente AC o pulsada de 20 a 16 000 Hz. Micrófono: entrada simulada. Audio didáctico, no acústica real.</small></div>
   <div class="ribbon">
     <div class="live-pill"><i></i><b id="liveStatus">SIMULANDO</b></div>
     <span id="statNodes">0 componentes</span><span class="dotsep">·</span><span id="statWires">0 conexiones</span>
@@ -55,8 +57,8 @@
       </div>
     </section>
   </main>
-  <footer><span>Patiñ Os v0.9.4 · Simulación lógica, DC, AC, RC/RL y fotovoltaica, sin internet</span><span>Flujo verde: estado lógico o sentido convencional estimado de corriente; <b>la corriente y tensión son cálculos didácticos de MNA, no mediciones físicas.</b></span></footer>
+  <footer><span>Patiñ Os v0.9.5 · Simulación lógica, DC, AC, RC/RL y fotovoltaica, sin internet</span><span>Flujo verde: estado lógico o sentido convencional estimado de corriente; <b>la corriente y tensión son cálculos didácticos de MNA, no mediciones físicas.</b></span></footer>
   <div id="toast" role="status" aria-live="polite"></div>
   <dialog id="propsDialog" class="props-dialog" aria-labelledby="propsTitle"><form id="propsForm" method="dialog"><h2 id="propsTitle">Propiedades</h2><p class="props-description">Mantén presionado cualquier componente para configurar sus parámetros.</p><div id="propsFields"></div><p id="propsHelp" class="props-help"></p><div class="props-actions"><button type="button" id="propsClose">Cancelar</button><button type="submit" class="props-save">Guardar cambios</button></div></form></dialog>
 </div>
-<script src="engine.js"></script><script src="analog.js"></script><script src="special.js"></script><script src="devices.js"></script><script src="spice.js"></script><script src="dig.js"></script><script src="leds.js"></script><script src="app.js"></script></body></html>
+<script src="engine.js"></script><script src="analog.js"></script><script src="special.js"></script><script src="devices.js"></script><script src="spice.js"></script><script src="dig.js"></script><script src="leds.js"></script><script src="sound.js"></script><script src="app.js"></script></body></html>

@@ -62,16 +62,20 @@
    }
    const out=A.map(r=>r[n]);return out.every(Number.isFinite)?out:null;
  }
- // Educational diode model: exponential below Vf, bounded dynamic resistance above Vf.
+ // Static semiconductor approximation with explicit series-limited conduction.
+ // IMPORTANT: LEDs and diodes are not ideal voltage drops; without a limiting
+ // resistor they may draw damaging current. We cap Newton's exponential and
+ // transition to a physically bounded positive differential resistance.
  function diodeIV(n,v){
    const drop=number(n,'forwardVoltage',n.type==='DIODE_GE'?.3:.7);
    const vt=Math.max(.012,number(n,'ideality',1.8)*.02585);
    const led=n.type.startsWith('LED_');
-   const reference=led?.01:.001;
+   const reference=led?.01:.001; // Vf is defined at nominal reference current.
    const series=Math.max(.5,number(n,'seriesResistance',led?8:2));
    const saturation=reference/(Math.exp(Math.min(80,drop/vt))-1);
+   const small=1e-9;
    let i,g;
-   if(v<=drop){const e=Math.exp(Math.max(-80,(v-drop)/vt));i=reference*e-saturation;g=Math.max(1e-9,reference*e/vt);}
+   if(v<=drop){const e=Math.exp(Math.max(-80,(v-drop)/vt));i=reference*e-saturation;g=Math.max(small,reference*e/vt);}
    else {const differential=series+vt/reference;i=reference+(v-drop)/differential;g=1/differential;}
    if(n.type==='DIODE_ZENER'||n.type==='DIODE_TVS'){
      const bv=number(n,'breakdown',5.1),rev=Math.exp(Math.min(24,Math.max(-24,(-v-bv)/.06)));
@@ -94,7 +98,10 @@
      return{readings,warnings,voltageStatus:status,state:null,fault:false};
    };
    if(!valid.some(n=>VSOURCE.has(n.type)||CURRENT.has(n.type)||n.type==='SOLAR'||n.type==='PHOTODIODE'))return fallback('Sin fuente eléctrica');
-   // Respect either pin order, including 0->0 and 1->1 links.
+   // Component pins are numbered 0 (left) and 1 (right). Analog wires
+   // may be created in EITHER direction and may connect 0->0 / 1->1.
+   // The old solver silently assumed every wire was 1->0; this was the
+   // main cause of wrong readings for manually drawn circuits.
    const parent=new Map(),find=k=>{if(parent.get(k)!==k)parent.set(k,find(parent.get(k)));return parent.get(k);};
    const union=(a,b)=>{const x=find(a),y=find(b);if(x!==y)parent.set(y,x);};
    for(const n of analog){parent.set(n.id+':L',n.id+':L');parent.set(n.id+':R',n.id+':R');}
@@ -220,7 +227,7 @@
    const diodes=valid.filter(n=>DIODES.has(n.type));
    if(activeSources.length&&diodes.length&&!diodes.some(n=>Math.abs(readings.get(n.id)?.current||0)>1e-6))
      warnings.push('Los diodos no conducen: comprueba polaridad, continuidad y conexiones. En un LED el ánodo (A) va hacia + y el cátodo (K) hacia −, con resistencia limitadora.');
-   if(valid.some(n=>['BUZZER','PIEZO','SPEAKER','LAMP','MOTOR'].includes(n.type)))warnings.push('Los actuadores/altavoces son cargas resistivas equivalentes: no se predice sonido, giro, temperatura ni dinámica mecánica.');
+   if(valid.some(n=>['BUZZER','PIEZO','SPEAKER','LAMP','MOTOR'].includes(n.type)))warnings.push('Los actuadores usan carga eléctrica equivalente. Buzzer, altavoz y piezo emiten audio didáctico al activar 🔊, pero no se calcula acústica ni dinámica mecánica.');
    if(valid.some(n=>n.type==='SOLAR'))warnings.push('Celda solar: modelo fotocorriente + diodo/shunt idealizado, sin curva calibrada ni efecto térmico.');
    if(valid.some(n=>['DIODE_TVS','DIODE_POWER','DIODE_FAST'].includes(n.type)))warnings.push('Diodos: modelo estático sin recuperación inversa, capacitancia parásita ni límite térmico.');
    if(fault)warnings.push('Posible cortocircuito o sobrecarga: corriente/potencia excesiva en el modelo ideal.');

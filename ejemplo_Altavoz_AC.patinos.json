@@ -1,0 +1,46 @@
+{
+  "format": "digital-flow-v1",
+  "nodes": [
+    {
+      "id": "s",
+      "type": "VAC",
+      "x": 150,
+      "y": 230,
+      "label": "VAC",
+      "state": 0,
+      "props": {
+        "voltage": 3,
+        "frequency": 440,
+        "phase": 0
+      }
+    },
+    {
+      "id": "p",
+      "type": "SPEAKER",
+      "x": 480,
+      "y": 230,
+      "label": "SPEAKER",
+      "state": 0,
+      "props": {
+        "resistance": 8,
+        "gain": 50
+      }
+    }
+  ],
+  "wires": [
+    {
+      "id": "w1",
+      "from": "s",
+      "fromPin": 1,
+      "to": "p",
+      "toPin": 0
+    },
+    {
+      "id": "w2",
+      "from": "p",
+      "fromPin": 1,
+      "to": "s",
+      "toPin": 0
+    }
+  ]
+}

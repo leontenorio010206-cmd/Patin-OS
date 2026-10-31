@@ -5,6 +5,8 @@
  const {simulateAnalog,SUPPORTED}=window.PatinosAnalog;
  const {DEVICE_TYPES,pinNames}=window.PatinosDevices;
  const {COLORS:LED_COLORS,single:singleLedVisual,rgb:rgbLedVisual}=window.PatinosLED;
+ const {AudioController}=window.PatinosSound;
+ const audio=new AudioController();
  const {parseDig}=window.PatinosDig;
  const {simulateSpice,exportNetlist,MULTI}=window.PatinosSpice;
  const $=id=>document.getElementById(id);
@@ -72,6 +74,7 @@
  function saveSpace(){spaces[workspace]={nodes,wires,history,view,logicMemory};}
  function switchWorkspace(target,save=true){
   if(!['logic','electronics'].includes(target)||(workspace===target&&save))return;
+  audio.update([],[],new Map());
   if(save){persist();saveSpace();}workspace=target;
   const next=spaces[target];nodes=next.nodes;wires=next.wires;history=next.history;
   view=next.view||{x:0,y:0,w:1160,h:650};logicMemory=next.logicMemory||{registers:{}};
@@ -239,7 +242,7 @@
     const colors=rgbLedVisual(reading);
     const circles=[['red',-17],['green',0],['blue',17]].map(([k,dx])=>{
       const v=colors.channels[k],opacity=(.2+.8*v.brightness).toFixed(3);
-      return `<g data-channel="${k}" data-brightness="${v.brightness.toFixed(3)}"><circle cx="${x+dx}" cy="${y}" r="18" fill="${v.color}" opacity="${(.48*v.brightness).toFixed(3)}" filter="url(#ledBloom)"/><circle cx="${x+dx}" cy="${y}" r="9" fill="${v.color}" opacity="${opacity}"/></g>`;
+      return `<g data-channel="${k}" data-brightness="${v.brightness.toFixed(3)}"><circle cx="${x+dx}" cy="${y}" r="18" fill="${v.color}" opacity="${(.48*v.brightness).toFixed(3)}" filter="url(#ledBloom)"/><circle cx="${x+dx}" cy="${y}" r="9" fill="${v.color}" opacity="${opacity}" /></g>`;
     }).join('');
     core=`<rect class="component-shell" x="${x-42}" y="${y-29}" width="84" height="58" rx="12"/><circle cx="${x}" cy="${y}" r="28" fill="${colors.mixed}" opacity="${(.11*colors.brightness).toFixed(3)}"/>${circles}`;
   }
@@ -250,6 +253,7 @@
     const diodeFill=isLed?` fill="${appearance.color}" fill-opacity="${appearance.bodyOpacity.toFixed(3)}"`:'';
     core=sym(`${bloom}<path class="component-line" d="M ${x-23} ${y-19} L ${x+13} ${y} L ${x-23} ${y+19} Z"${diodeFill}/>`+line(`M ${x+13} ${y-21} V ${y+21}`));
     if(isLed)core+=`<path d="M ${x+6} ${y-24} l 13 -11 m-3 0 l 4 -2 m-3 7 l 4 1 M ${x+18} ${y-16} l 13 -11" fill="none" stroke="${appearance.color}" stroke-width="2.5" opacity="${appearance.raysOpacity.toFixed(3)}"/>`;
+
     if(t==='DIODE_GE')core+=`<text x="${x}" y="${y+34}" class="component-mini">Ge</text>`;
     if(t==='DIODE_ZENER')core+=line(`M ${x+13} ${y-21} l 7 0 M ${x+13} ${y+21} l -7 0`);
     if(t==='DIODE_SCHOTTKY')core+=line(`M ${x+13} ${y-21} l 7 0 v 7 M ${x+13} ${y+21} h -7 v -7`);
@@ -268,6 +272,14 @@
   else if(t==='LAMP')core=sym(`<circle cx="${x}" cy="${y}" r="26" class="component-shell ${reading?.active?'component-on':''}"/>`+line(`M ${x-18} ${y-18} l 36 36 M ${x+18} ${y-18} l -36 36`));
   else if(t==='MOTOR')core=sym(`<circle cx="${x}" cy="${y}" r="26" class="component-shell"/><text x="${x}" y="${y+8}" class="component-letter">M</text>`);
   else if(t==='SW_ANALOG'||t==='PUSH'||t==='SW_SPDT'||t==='SW_DIP')core=sym(line(`M ${x-27} ${y} l 38 ${(n.props?.closed===false||t==='PUSH')?-19:0} M ${x+11} ${y} h 16`));
+  else if(t==='DIODE_BRIDGE')core=`<path class="component-line" d="M ${x} ${y-30} L ${x+30} ${y} L ${x} ${y+30} L ${x-30} ${y} Z M ${x-18} ${y} H ${x-6} M ${x+6} ${y} H ${x+18} M ${x-6} ${y-10} L ${x+6} ${y} L ${x-6} ${y+10} Z M ${x+6} ${y-12} V ${y+12}"/>`;
+  else if(t==='CRYSTAL')core=`<path class="component-line" d="M ${x-36} ${y} H ${x-17} M ${x+17} ${y} H ${x+36} M ${x-17} ${y-20} V ${y+20} M ${x+17} ${y-20} V ${y+20}"/><rect class="component-shell" x="${x-11}" y="${y-27}" width="22" height="54" rx="2"/>`;
+  else if(t==='ANTENNA')core=`<path class="component-line" d="M ${x-34} ${y+22} H ${x} V ${y-8} M ${x} ${y-8} L ${x-24} ${y-30} M ${x} ${y-8} L ${x+24} ${y-30} M ${x} ${y+22} H ${x+34}"/>`;
+  else if(t==='OSCILLOSCOPE')core=`<rect class="component-shell" x="${x-32}" y="${y-26}" width="64" height="52" rx="5"/><path class="component-line" d="M ${x-24} ${y+9} h12 v-22 h12 v22 h12 v-22 h12"/>`;
+  else if(t==='MIC')core=sym(`<circle class="component-shell" cx="${x}" cy="${y}" r="26"/><path class="component-line" d="M ${x-17} ${y-8} v16 M ${x-9} ${y-12} v24 M ${x-1} ${y-19} v38 M ${x+7} ${y-12} v24 M ${x+15} ${y-8} v16"/>`);
+  else if(t==='HALL')core=box('HALL');
+  else if(t==='SCR'||t==='TRIAC')core=sym(`<path class="component-line" d="M ${x-23} ${y-17} L ${x+12} ${y} L ${x-23} ${y+17} Z M ${x+13} ${y-20} V ${y+20} M ${x-5} ${y+14} L ${x} ${y+37}"/>`);
+  else if(t==='PUSH_PULL')core=box('↕');
   else if(t==='FUSE')core=sym(`<rect x="${x-27}" y="${y-10}" width="54" height="20" class="component-shell"/>`);
   else if(t==='VOLTMETER'||t==='AMMETER'||t==='OHMMETER')core=sym(`<circle cx="${x}" cy="${y}" r="26" class="component-shell"/><text x="${x}" y="${y+8}" class="component-letter">${t==='VOLTMETER'?'V':t==='AMMETER'?'A':'Ω'}</text>`);
   else core=sym(box(({NPN:'NPN',PNP:'PNP',NMOS:'NMOS',PMOS:'PMOS',OPAMP:'OP',TIMER_555:'555',REG_7805:'7805'})[t]||t.replace(/_/g,' ').slice(0,6)));
@@ -372,7 +384,7 @@
   $('hint').textContent=deleteMode?'Modo borrar: toca un cable o componente':pendingWire?'Arrastra o toca una entrada para conectar':pendingInput?'Toca una salida para conectar':workspace==='electronics'?'Conecta + a A y K a − usando resistencia en serie · Mantén pulsado para propiedades':'Arrastra terminal a terminal · Mantén presionado para propiedades';
  }
  let mousePreview=null,lastWireMarkup=null;
- function refresh(){lastState=simulate(nodes,wires,clockState,performance.now(),logicMemory);logicMemory=lastState.state;analogState=simulateSpice(nodes,wires,performance.now()/1000,analogState.state);render();refreshScopeSelect();drawScope();
+ function refresh(){lastState=simulate(nodes,wires,clockState,performance.now(),logicMemory);logicMemory=lastState.state;analogState=simulateSpice(nodes,wires,performance.now()/1000,analogState.state);audio.update(workspace==='electronics'&&running?nodes:[],wires,analogState.readings);render();refreshScopeSelect();drawScope();
   if(!lastState.stable)showMessage('Oscilación detectada: ciclo sin estabilizar');refreshAnalogStatus();
  }
  function refreshAnalogStatus(){const e=$('analogStatus');if(!e)return;
@@ -604,7 +616,7 @@
  function drawTools(){const query=$('toolSearch').value.toLocaleLowerCase('es').trim(),cat=$('toolCategory').value;
   const allowed=new Set((workspace==='logic'?logicCategories:electronicsCategories).flatMap(c=>categories[c]));
   const types=(cat==='all'?buttonTypes:(categories[cat]||[])).filter(t=>allowed.has(t)).filter(t=>(labels[t]+' '+t).toLocaleLowerCase('es').includes(query));
-  $('tools').innerHTML=types.length?types.map(t=>{const kind=TYPES[t].domain==='analog'?((SUPPORTED.has(t)||MULTI.has(t)||DEVICE_TYPES.has(t)||['TRANSFORMER','LED_RGB'].includes(t))?'Física':'Esquema'):'Lógica';return `<button class="tool" data-type="${t}" title="Añadir ${labels[t]} · ${kind}"><span class="glyph" style="${t==='LED_RGB'?'background:linear-gradient(90deg,#ff4255,#45ed77,#4489ff);background-clip:text;-webkit-background-clip:text;color:transparent':`color:${LED_COLORS[t]||'#fff'}`}">${symbols[t]}</span><span>${labels[t]}</span><small class="model-type ${kind==='Esquema'?'pending':''}">${kind}</small></button>`;}).join(''):'<span class="empty-tools">Sin resultados</span>';
+  $('tools').innerHTML=types.length?types.map(t=>{const kind=TYPES[t].domain==='analog'?((SUPPORTED.has(t)||MULTI.has(t)||DEVICE_TYPES.has(t)||['TRANSFORMER','LED_RGB'].includes(t))?'Física':'Esquema'):'Lógica';return `<button class="tool" data-type="${t}" title="Añadir ${labels[t]} · ${kind}"><span class="glyph" ${LED_COLORS[t]?`style="color:${LED_COLORS[t]}"`:t==='LED_RGB'?'style="background:linear-gradient(90deg,#ff4255,#45ed77,#4489ff);background-clip:text;-webkit-background-clip:text;color:transparent"':''}>${symbols[t]}</span><span>${labels[t]}</span><small class="model-type ${kind==='Esquema'?'pending':''}">${kind}</small></button>`;}).join(''):'<span class="empty-tools">Sin resultados</span>';
  }
  $('logicModeBtn').onclick=()=>switchWorkspace('logic');$('electronicsModeBtn').onclick=()=>switchWorkspace('electronics');
  $('toolSearch').oninput=drawTools;$('toolCategory').onchange=drawTools;drawTools();
@@ -613,7 +625,17 @@
  $('clearBtn').onclick=()=>{if(!confirm('¿Borrar todos los componentes de este laboratorio?'))return;snapshot();nodes=[];wires=[];logicMemory={registers:{}};scopeId=null;pendingWire=null;pendingInput=null;trace.length=0;persist();refresh();};
  $('deleteModeBtn').onclick=()=>{deleteMode=!deleteMode;$('deleteModeBtn').classList.toggle('on',deleteMode);pendingWire=null;pendingInput=null;refresh();};
  $('zoomInBtn').onclick=()=>zoom(.8);$('zoomOutBtn').onclick=()=>zoom(1.25);$('zoomResetBtn').onclick=()=>{fitCircuit();render();};
- $('runBtn').onclick=updateRun;$('saveBtn').onclick=exportProject;$('spiceBtn').onclick=saveSpice;
+ $('runBtn').onclick=()=>{updateRun();audio.update(workspace==='electronics'&&running?nodes:[],wires,analogState.readings);};$('saveBtn').onclick=exportProject;$('spiceBtn').onclick=saveSpice;
+ $('audioBtn').onclick=async()=>{
+   if(audio.enabled){audio.stop();$('audioBtn').setAttribute('aria-pressed','false');$('audioBtn').firstChild.textContent='🔇 ';$('audioPanel').hidden=true;showMessage('Audio desactivado');return;}
+   try{await audio.enable();$('audioBtn').setAttribute('aria-pressed','true');$('audioBtn').firstChild.textContent='🔊 ';$('audioPanel').hidden=false;audio.update(workspace==='electronics'&&running?nodes:[],wires,analogState.readings);showMessage('Audio activado · usa fuentes AC/pulsadas para altavoz y piezo');}
+   catch(error){audio.stop();showMessage('Audio no disponible: '+error.message);}
+ };
+ $('audioVolume').oninput=e=>{const v=Number(e.target.value);audio.setVolume(v);$('audioVolumeValue').textContent=v+'%';};
+ document.addEventListener('visibilitychange',()=>{if(document.hidden&&audio.enabled){audio.stop();$('audioBtn').setAttribute('aria-pressed','false');$('audioBtn').firstChild.textContent='🔇 ';$('audioPanel').hidden=true;}});
+ window.addEventListener('pagehide',()=>audio.stop());
+ window.PatinosPauseAudio=()=>{audio.stop();$('audioBtn').setAttribute('aria-pressed','false');$('audioBtn').firstChild.textContent='🔇 ';$('audioPanel').hidden=true;};
+ 
  $('loadBtn').onclick=()=>{if(window.AndroidBridge){window.AndroidBridge.openJson();return;}$('fileInput').click();};
  $('fileInput').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;if(f.size>2000000){showMessage('Archivo demasiado grande');return;}importProject(await f.text());e.target.value='';};
  $('scopeSelect').onchange=e=>{scopeId=e.target.value;trace.length=0;drawScope();};
@@ -623,6 +645,7 @@
   const now=performance.now();if(now-clockTime>=500){clockState=1-clockState;clockTime=now;}
   const nextState=simulate(nodes,wires,clockState,now,logicMemory);logicMemory=nextState.state;const nextAnalog=simulateSpice(nodes,wires,now/1000,analogState.state);const currentFingerprint=JSON.stringify([...nextAnalog.readings.values()].map(r=>[r.active,Math.round((r.current||0)*10000),Math.round((r.voltage||0)*1000)]));const priorFingerprint=JSON.stringify([...analogState.readings.values()].map(r=>[r.active,Math.round((r.current||0)*10000),Math.round((r.voltage||0)*1000)]));analogState=nextAnalog;
   const changed=nodes.some(n=>nextState.outs.get(n.id)!==lastState.outs.get(n.id));lastState=nextState;
+  audio.update(workspace==='electronics'&&running?nodes:[],wires,analogState.readings);
   trace.push(TYPES[nodes.find(n=>n.id===scopeId)?.type]?.domain==='analog'?(analogState.readings.get(scopeId)?.voltage??null):(lastState.outs.get(scopeId)??null));if(trace.length>120)trace.shift();
   if((changed||currentFingerprint!==priorFingerprint)&&!gesture)render();drawScope();refreshAnalogStatus();
   if(nextAnalog.fault && now-analogFaultAt>5000){analogFaultAt=now;const n=nodes.find(n=>Math.abs(nextAnalog.readings.get(n.id)?.current||0)>20);if(n)sparks(n.x,n.y,'⚠ Posible cortocircuito/sobrecarga: revisa el circuito');}

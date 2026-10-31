@@ -145,6 +145,26 @@ public class MainActivity extends Activity {
             }
         } catch (Exception e) { toastJs("Error: " + e.getMessage()); }
     }
+    @Override protected void onPause() {
+        // Never keep synthetic circuit tones playing behind other Android apps.
+        if (web != null) {
+            web.evaluateJavascript("window.PatinosPauseAudio && window.PatinosPauseAudio()", null);
+            web.onPause();
+        }
+        super.onPause();
+    }
+    @Override protected void onResume() {
+        super.onResume();
+        if (web != null) web.onResume();
+    }
+    @Override protected void onDestroy() {
+        if (web != null) {
+            web.evaluateJavascript("window.PatinosPauseAudio && window.PatinosPauseAudio()", null);
+            web.destroy();web=null;
+        }
+        super.onDestroy();
+    }
+
     private void toastJs(String message) {
         web.evaluateJavascript("window.showMessage(" + JSONObject.quote(message) + ")", null);
     }

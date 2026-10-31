@@ -1,0 +1,45 @@
+{
+  "format": "digital-flow-v1",
+  "nodes": [
+    {
+      "id": "s",
+      "type": "VDC",
+      "x": 150,
+      "y": 230,
+      "label": "VDC",
+      "state": 0,
+      "props": {
+        "voltage": 5
+      }
+    },
+    {
+      "id": "p",
+      "type": "BUZZER",
+      "x": 480,
+      "y": 230,
+      "label": "BUZZER",
+      "state": 0,
+      "props": {
+        "resistance": 200,
+        "threshold": 3,
+        "toneHz": 2200
+      }
+    }
+  ],
+  "wires": [
+    {
+      "id": "w1",
+      "from": "s",
+      "fromPin": 1,
+      "to": "p",
+      "toPin": 0
+    },
+    {
+      "id": "w2",
+      "from": "p",
+      "fromPin": 1,
+      "to": "s",
+      "toPin": 0
+    }
+  ]
+}

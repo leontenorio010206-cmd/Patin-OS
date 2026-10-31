@@ -81,3 +81,13 @@ svg{shape-rendering:geometricPrecision;text-rendering:geometricPrecision}
 .workspace-tab small{font-weight:500;color:#91999c;font-size:10px}.workspace-tab.active{border-color:#59ed92;background:#14271c;color:#eafdf1}.workspace-tab.active small{color:#a2ddbc}
 .workspace-tab:focus-visible{outline:2px solid #7af6ad;outline-offset:2px}
 @media(max-width:630px){.workspace-tabs{gap:6px;padding:5px 9px}.workspace-tab{font-size:11px;min-height:39px;padding:5px 8px;gap:4px}.workspace-tab small{display:none}}
+
+/* v0.9.5: explicit opt-in sound controls; accessible compact mobile layout */
+.audio-panel{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:10px 16px;background:#131415;border-bottom:1px solid #414448;color:#fafafa;font-size:13px;}
+.audio-panel[hidden]{display:none;}
+.audio-panel input[type=range]{accent-color:#37ef91;flex:1;min-width:110px;max-width:340px;}
+.audio-panel output{font-variant-numeric:tabular-nums;min-width:35px;}
+.audio-panel small{flex-basis:100%;color:#bbc0c4;line-height:1.45;}
+#audioBtn[aria-pressed=true]{background:#215036;border-color:#35de83;color:#fff;}
+#audioBtn:focus-visible,#audioVolume:focus-visible{outline:2px solid #40f395;outline-offset:2px;}
+@media(max-width:760px){.audio-panel{padding:8px 12px;gap:7px}.audio-panel label{font-size:11px}.audio-panel small{font-size:10px}.header-tools #audioBtn span{display:none;}}
