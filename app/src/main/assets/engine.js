@@ -7,6 +7,14 @@ const extras={
  AND4:{in:4,name:'AND 4'},OR4:{in:4,name:'OR 4'},XOR4:{in:4,name:'XOR 4'},NAND4:{in:4,name:'NAND 4'},NOR4:{in:4,name:'NOR 4'},XNOR4:{in:4,name:'XNOR 4'},
  MUX2:{in:3,name:'MUX 2:1'},MAJ3:{in:3,name:'Mayoría 3'},ADD_SUM:{in:3,name:'Sumador SUM'},ADD_CARRY:{in:3,name:'Sumador CARRY'},PARITY3:{in:3,name:'Paridad'},EQ:{in:2,name:'Igualdad'},IMPLIES:{in:2,name:'Implicación'},PROBE:{in:1,name:'Sonda'}
  };Object.assign(TYPES,extras);
+ // Combinational logic with one explicit output pin per module; sequential blocks hold their Q state.
+ Object.assign(TYPES,{AND5:{in:5,name:'AND 5'},OR5:{in:5,name:'OR 5'},XOR5:{in:5,name:'XOR 5'},NAND5:{in:5,name:'NAND 5'},NOR5:{in:5,name:'NOR 5'},XNOR5:{in:5,name:'XNOR 5'},
+ AND6:{in:6,name:'AND 6'},OR6:{in:6,name:'OR 6'},XOR6:{in:6,name:'XOR 6'},NAND6:{in:6,name:'NAND 6'},NOR6:{in:6,name:'NOR 6'},XNOR6:{in:6,name:'XNOR 6'},
+ DFF:{in:2,name:'Flip-flop D (D, CLK)'},TFF:{in:2,name:'Flip-flop T (T, CLK)'},JKFF:{in:3,name:'Flip-flop JK (J, K, CLK)'},SRLATCH:{in:2,name:'Latch SR (S, R)'},
+ DEC2_0:{in:2,name:'Decodificador 2→4 · Y0'},DEC2_1:{in:2,name:'Decodificador 2→4 · Y1'},DEC2_2:{in:2,name:'Decodificador 2→4 · Y2'},DEC2_3:{in:2,name:'Decodificador 2→4 · Y3'},
+ DEMUX0:{in:2,name:'Demultiplexor Y0 (D,S)'},DEMUX1:{in:2,name:'Demultiplexor Y1 (D,S)'},
+ ENCODER4_B0:{in:4,name:'Codificador prioridad B0'},ENCODER4_B1:{in:4,name:'Codificador prioridad B1'}
+ });
  const electronics={
  RESISTOR:'Resistencia',POT:'Potenciómetro',LDR:'Fotoresistencia',NTC:'Termistor NTC',PTC:'Termistor PTC',
  DIODE_FAST:'Diodo rápido',DIODE_POWER:'Diodo rectificador 1N400x',DIODE_SI:'Diodo silicio',DIODE_GE:'Diodo germanio',DIODE_SCHOTTKY:'Diodo Schottky',DIODE_ZENER:'Diodo Zener',DIODE_TVS:'Diodo TVS',DIODE_BRIDGE:'Puente rectificador',
@@ -22,6 +30,7 @@ const extras={
  };
  for(const [type,name] of Object.entries(electronics))TYPES[type]={in:1,name,domain:'analog',pins:['NPN','PNP','NMOS','PMOS','OPAMP'].includes(type)?3:2};
  const PROPERTY_SCHEMAS={
+  DFF:[['initial','Q inicial','',0,0,1]],TFF:[['initial','Q inicial','',0,0,1]],JKFF:[['initial','Q inicial','',0,0,1]],SRLATCH:[['initial','Q inicial','',0,0,1]],
   CLOCK:[['periodMs','Periodo','ms',1000,20,60000],['duty','Ciclo activo','%',50,1,99]],
   RESISTOR:[['resistance','Resistencia','Ω',1000,.1,1e9]], POT:[['resistance','Resistencia total','Ω',10000,1,1e9],['position','Posición','%',50,0,100]],
   LDR:[['resistance','R a 10 lux','Ω',10000,1,1e9],['illuminance','Iluminación','lux',10,.01,100000],['gamma','Exponente de luz','',.8,.1,2.5]],
@@ -54,7 +63,7 @@ const extras={
   NMOS:[['threshold','Tensión umbral Vth','V',2,.1,10],['transconductance','Parámetro KP','A/V²',.002,.000001,1],['channelLambda','Modulación de canal','1/V',.02,0,1]],
   PMOS:[['threshold','Magnitud de Vth','V',2,.1,10],['transconductance','Parámetro KP','A/V²',.002,.000001,1],['channelLambda','Modulación de canal','1/V',.02,0,1]],
   OPAMP:[['openLoopGain','Ganancia abierta idealizada','V/V',100,1,100000],['railVoltage','Riel virtual de saturación','V',12,.1,100]],
-  RELAY:[['coilResistance','Resistencia bobina','Ω',120,1,1e8]],SOLAR:[['voltage','Voc nominal','V',6,0,1000]],VARISTOR:[['breakdown','Voltaje nominal','V',275,1,1e5]],CRYSTAL:[['frequency','Frecuencia','Hz',16000000,1,1e9]]
+  RELAY:[['coilResistance','Resistencia bobina','Ω',120,1,1e8]],CRYSTAL:[['frequency','Frecuencia','Hz',16000000,1,1e9]]
  };
  function defaultProps(type){return Object.fromEntries((PROPERTY_SCHEMAS[type]||[]).map(([key,,unit,def])=>[key,def]));}
  function cleanProps(type,value){const schema=PROPERTY_SCHEMAS[type]||[];const result=defaultProps(type);
@@ -66,14 +75,14 @@ const extras={
 
  function allKnown(a){return a.every(isLevel);}
  function evalMulti(type,inputs){
-  const match=/^(AND|OR|XOR|NAND|NOR|XNOR)[34]$/.exec(type);
+  const match=/^(AND|OR|XOR|NAND|NOR|XNOR)[3456]$/.exec(type);
   if(!match)return null;
-  const gate=match[1],base=gate.startsWith('N')?gate.slice(1):gate;
+  const gate=match[1],base=({NAND:'AND',NOR:'OR',XNOR:'XOR'})[gate]||gate;
   let out=null;
   if(base==='AND')out=inputs.includes(0)?0:allKnown(inputs)?1:null;
   if(base==='OR')out=inputs.includes(1)?1:allKnown(inputs)?0:null;
   if(base==='XOR')out=allKnown(inputs)?inputs.reduce((a,b)=>a^b,0):null;
-  return gate.startsWith('N')&&isLevel(out)?1-out:out;
+  return ['NAND','NOR','XNOR'].includes(gate)&&isLevel(out)?1-out:out;
  }
  
  function isLevel(v){return v===1||v===0;}
@@ -83,13 +92,22 @@ const extras={
    if(type==='CONST0')return 0;
    if(type==='CLOCK')return clockState?1:0;
    const a=inputs[0],b=inputs[1];
-   if(/^(AND|OR|XOR|NAND|NOR|XNOR)[34]$/.test(type))return evalMulti(type,inputs);
+   if(/^(AND|OR|XOR|NAND|NOR|XNOR)[3456]$/.test(type))return evalMulti(type,inputs);
    if(type==='MAJ3'||type==='ADD_CARRY'){
      const ones=inputs.filter(v=>v===1).length,zeros=inputs.filter(v=>v===0).length;
      return ones>=2?1:zeros>=2?0:null;
    }
    if(type==='ADD_SUM'||type==='PARITY3')return allKnown(inputs)?inputs.reduce((x,v)=>x^v,0):null;
    if(type==='MUX2'){const sel=inputs[2];if(isLevel(sel))return inputs[sel];return a===b&&isLevel(a)?a:null;}
+   const decoder=/^DEC2_([0-3])$/.exec(type);
+   if(decoder)return allKnown(inputs)?Number((inputs[0]+2*inputs[1])===Number(decoder[1])):null;
+   if(type==='DEMUX0'||type==='DEMUX1'){const d=inputs[0],sel=inputs[1];if(sel===null||sel===undefined)return d===0?0:null;return sel===(type==='DEMUX0'?0:1)?d:0;}
+   if(type==='ENCODER4_B0'||type==='ENCODER4_B1'){
+     if(inputs.some(v=>v===null||v===undefined))return null;
+     const priority=[3,2,1,0].find(i=>inputs[i]===1);
+     if(priority===undefined)return null;
+     return type==='ENCODER4_B0'?(priority&1):((priority>>1)&1);
+   }
    if(type==='EQ')return isLevel(a)&&isLevel(b)?Number(a===b):null;
    if(type==='IMPLIES')return evalGate('OR',[isLevel(a)?1-a:null,b],node,clockState);
  
@@ -105,32 +123,75 @@ const extras={
     default:return null;
    }
  }
- function simulate(nodes,wires,clockState,timeMs){
-   const index=new Map(nodes.map(n=>[n.id,n]));const outs=new Map(nodes.map(n=>[n.id,null]));
+ const SEQUENTIAL=new Set(['DFF','TFF','JKFF','SRLATCH']);
+ /** state is optional, but must be passed back for edge-triggered circuits. No global mutable state. */
+ function simulate(nodes,wires,clockState,timeMs,state){
+   const index=new Map(nodes.map(n=>[n.id,n]));
    const inputLinks=new Map();let conflict=false;
    for(const w of wires){
-     if(!index.has(w.from)||!index.has(w.to)||!TYPES[index.get(w.to).type])continue;
-     let n=index.get(w.to);if(w.input<0||w.input>=TYPES[n.type].in)continue;
+     const dest=index.get(w.to),from=index.get(w.from);
+     if(!dest||!from||TYPES[dest.type]?.domain==='analog'||TYPES[from.type]?.domain==='analog')continue;
+     if(!Number.isInteger(w.input)||w.input<0||w.input>=TYPES[dest.type].in)continue;
      const key=w.to+':'+w.input;
      if(inputLinks.has(key))conflict=true;
      inputLinks.set(key,w.from);
    }
-   let stable=false;
-   for(let step=0;step<Math.max(32,nodes.length*4);step++){
-     let changed=false;
-     for(const n of nodes){
-       if(!TYPES[n.type])continue;
-       const ins=Array.from({length:TYPES[n.type].in},(_,i)=>{
-         const src=inputLinks.get(n.id+':'+i);return src==null?null:outs.get(src);
-       });
-       const localClock=n.type==='CLOCK'&&Number.isFinite(timeMs)?((timeMs%((n.props?.periodMs)||1000))<(((n.props?.periodMs)||1000)*((n.props?.duty)||50)/100)?1:0):clockState;
-       const value=evalGate(n.type,ins,n,localClock);
-       if(outs.get(n.id)!==value){outs.set(n.id,value);changed=true;}
-     }
-     if(!changed){stable=true;break;}
+   const prior=state?.registers||{};const registers={};
+   for(const n of nodes)if(SEQUENTIAL.has(n.type)){
+     const old=prior[n.id];
+     registers[n.id]={q:old?.q===null?null:(old?.q===1?1:old?.q===0?0:(n.props?.initial===1?1:0)),prevClock:old?.prevClock===1?1:old?.prevClock===0?0:0};
    }
-   if(!stable){for(const n of nodes)if(!['SWITCH','CONST1','CONST0','CLOCK'].includes(n.type))outs.set(n.id,null);}
-   return {outs,stable,conflict};
+   const inputsFor=(n,outs)=>Array.from({length:TYPES[n.type].in},(_,i)=>{
+     const src=inputLinks.get(n.id+':'+i);return src==null?null:outs.get(src);
+   });
+   function settle(){
+     const outs=new Map(nodes.map(n=>[n.id,SEQUENTIAL.has(n.type)?registers[n.id].q:null]));
+     let stable=false;
+     for(let step=0;step<Math.max(32,nodes.length*4);step++){
+       let changed=false;
+       for(const n of nodes){
+         if(!TYPES[n.type]||TYPES[n.type].domain==='analog'||SEQUENTIAL.has(n.type))continue;
+         const localClock=n.type==='CLOCK'&&Number.isFinite(timeMs)?
+          ((timeMs%(n.props?.periodMs||1000))<((n.props?.periodMs||1000)*(n.props?.duty??50)/100)?1:0):clockState;
+         const value=evalGate(n.type,inputsFor(n,outs),n,localClock);
+         if(outs.get(n.id)!==value){outs.set(n.id,value);changed=true;}
+       }
+       if(!changed){stable=true;break;}
+     }
+     if(!stable)for(const n of nodes)if(!SEQUENTIAL.has(n.type)&&!['SWITCH','CONST1','CONST0','CLOCK'].includes(n.type))outs.set(n.id,null);
+     return {outs,stable};
+   }
+   let result=settle(),changedState=false;
+   // Update sequential elements exactly once per simulation step. Re-evaluate combinational outputs after updates.
+   for(const n of nodes){
+     if(!SEQUENTIAL.has(n.type))continue;
+     const reg=registers[n.id],ins=inputsFor(n,result.outs);let next=reg.q;
+     if(n.type==='SRLATCH'){
+       const [set,reset]=ins;
+       if(set===1&&reset===1)next=null; // invalid active-high SR command
+       else if(set===1&&reset===0)next=1;
+       else if(set===0&&reset===1)next=0;
+       else if(set===null||reset===null)next=null;
+     }else{
+       const clk=ins[n.type==='JKFF'?2:1];
+       if(clk===1&&reg.prevClock===0){
+         if(n.type==='DFF')next=ins[0];
+         if(n.type==='TFF')next=ins[0]===0?reg.q:ins[0]===1&&reg.q!==null?1-reg.q:null;
+         if(n.type==='JKFF'){
+           const [j,k]=ins;
+           if(j===0&&k===0)next=reg.q;
+           else if(j===1&&k===0)next=1;
+           else if(j===0&&k===1)next=0;
+           else if(j===1&&k===1)next=reg.q===null?null:1-reg.q;
+           else next=null;
+         }
+       }
+       reg.prevClock=clk===1?1:clk===0?0:null;
+     }
+     if(next!==reg.q){reg.q=next;changedState=true;}
+   }
+   if(changedState){const after=settle();result={outs:after.outs,stable:result.stable&&after.stable};}
+   return {outs:result.outs,stable:result.stable,conflict,state:{registers}};
  }
  function validateProject(raw){
    if(!raw||raw.format!=='digital-flow-v1'||!Array.isArray(raw.nodes)||!Array.isArray(raw.wires))throw Error('Formato no compatible. Se requiere Digital Flow JSON v1.');

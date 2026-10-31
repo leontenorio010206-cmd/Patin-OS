@@ -9,6 +9,8 @@
  const svgNS='http://www.w3.org/2000/svg';
  const board=$('board');const stage=$('stage');const nodesLayer=$('nodesLayer');const wiresLayer=$('wiresLayer');const overlay=$('overlayLayer');const fxLayer=$('fxLayer');
  let nodes=[],wires=[],seq=100,selected=null,scopeId=null,history=[],pendingWire=null,pendingInput=null,pendingPort=null,gesture=null,deleteMode=false,running=true,clockState=0,clockTime=0;
+ let workspace='logic';let logicMemory={registers:{}};
+ const spaces={logic:{nodes:[],wires:[],history:[],view:null},electronics:{nodes:[],wires:[],history:[],view:null}};
  let view={x:0,y:0,w:1160,h:650};let lastState={outs:new Map(),stable:true,conflict:false};let analogState={readings:new Map(),warnings:[],state:null,fault:false};let analogFaultAt=0;const trace=[];
  const categories={source:['SWITCH','CLOCK','CONST1','CONST0'],gate:['AND','OR','XOR','NOT','NAND','NOR','XNOR','BUF','AND3','OR3','XOR3','NAND3','NOR3','XNOR3','AND4','OR4','XOR4','NAND4','NOR4','XNOR4'],advanced:['MUX2','MAJ3','ADD_SUM','ADD_CARRY','PARITY3','EQ','IMPLIES'],output:['LED','OUT','PROBE']};
  Object.assign(categories,{
@@ -19,10 +21,25 @@
   measurement:['VOLTMETER','AMMETER','OHMMETER','OSCILLOSCOPE','HALL','MIC'],
   transistor:['NPN','PNP','NMOS','PMOS','SCR','TRIAC','OPAMP','REG_7805','TIMER_555','IC_7400','IC_7404','COUNTER_4017','SEVEN_SEG','ANTENNA','PUSH_PULL']
  });
+ Object.assign(categories,{
+  sequential:['DFF','TFF','JKFF','SRLATCH'],
+  decoder:['DEC2_0','DEC2_1','DEC2_2','DEC2_3','DEMUX0','DEMUX1','ENCODER4_B0','ENCODER4_B1']
+ });
+ for(const count of [5,6])for(const gate of ['AND','OR','XOR','NAND','NOR','XNOR'])categories.gate.push(gate+count);
+ const logicCategories=['source','gate','advanced','sequential','decoder','output'];
+ const electronicsCategories=['passive','supply','diode','actuator','measurement','transistor'];
  const buttonTypes=Object.values(categories).flat();
 
  const symbols={SWITCH:'⏻',CLOCK:'▁▔▁',CONST1:'1',CONST0:'0',AND:'&',OR:'≥1',XOR:'⊕',NOT:'¬',NAND:'⊼',NOR:'⊽',XNOR:'≡',BUF:'▷',LED:'◉',OUT:'→',PROBE:'⌖',AND3:'&₃',OR3:'≥₃',XOR3:'⊕₃',NAND3:'⊼₃',NOR3:'⊽₃',XNOR3:'≡₃',AND4:'&₄',OR4:'≥₄',XOR4:'⊕₄',NAND4:'⊼₄',NOR4:'⊽₄',XNOR4:'≡₄',MUX2:'MUX',MAJ3:'≥2',ADD_SUM:'Σ',ADD_CARRY:'C',PARITY3:'P',EQ:'=',IMPLIES:'⇒'};
  const labels={SWITCH:'Entrada',CLOCK:'Reloj',CONST1:'HIGH',CONST0:'LOW',AND:'AND',OR:'OR',XOR:'XOR',NOT:'NOT',NAND:'NAND',NOR:'NOR',XNOR:'XNOR',BUF:'Buffer',LED:'LED',OUT:'Salida',PROBE:'Sonda',AND3:'AND 3',OR3:'OR 3',XOR3:'XOR 3',NAND3:'NAND 3',NOR3:'NOR 3',XNOR3:'XNOR 3',AND4:'AND 4',OR4:'OR 4',XOR4:'XOR 4',NAND4:'NAND 4',NOR4:'NOR 4',XNOR4:'XNOR 4',MUX2:'MUX 2:1',MAJ3:'Mayoría',ADD_SUM:'Suma Σ',ADD_CARRY:'Acarreo',PARITY3:'Paridad',EQ:'A = B',IMPLIES:'A ⇒ B'};
+ Object.assign(symbols,{
+  DFF:'D',TFF:'T',JKFF:'JK',SRLATCH:'SR',
+  DEC2_0:'D0',DEC2_1:'D1',DEC2_2:'D2',DEC2_3:'D3',DEMUX0:'Y0',DEMUX1:'Y1',ENCODER4_B0:'E0',ENCODER4_B1:'E1'
+ });
+ Object.assign(labels,{DFF:'Flip-flop D',TFF:'Flip-flop T',JKFF:'Flip-flop JK',SRLATCH:'Latch SR',
+  DEC2_0:'Decoder Y0',DEC2_1:'Decoder Y1',DEC2_2:'Decoder Y2',DEC2_3:'Decoder Y3',
+  DEMUX0:'Demux Y0',DEMUX1:'Demux Y1',ENCODER4_B0:'Encoder B0',ENCODER4_B1:'Encoder B1'});
+ for(const count of [5,6])for(const gate of ['AND','OR','XOR','NAND','NOR','XNOR']){symbols[gate+count]=symbols[gate]+count;labels[gate+count]=gate+' '+count;}
  const analogSymbols={RESISTOR:'▰',POT:'↗',LDR:'☀',NTC:'ϑ',PTC:'ϑ',CAP:'┃┃',CAP_POL:'┃)',CAP_VARIABLE:'↗',INDUCTOR:'∿',CHOKE:'∿',TRANSFORMER:'∿∿',VARISTOR:'V',CRYSTAL:'◇',
  VDC:'⎓',VAC:'∿',VPULSE:'▁▔▁',VTRI:'△',VSAW:'⩘',IPULSE:'↥',BATTERY:'▮',CELL:'▯',ISOURCE:'↑',GND:'⏚',JUNCTION:'●',VCC:'V+',SOLAR:'☀',DIODE_FAST:'▷|',DIODE_POWER:'▷|',TVS_BIDIR:'⇵',LED_AMBER:'◉',LED_WHITE:'◉',DIODE_SI:'▷|',DIODE_GE:'▷|',DIODE_SCHOTTKY:'▷⊢',DIODE_ZENER:'▷┤',DIODE_TVS:'▷|',DIODE_BRIDGE:'◇',LED_RED:'◉',LED_GREEN:'◉',LED_BLUE:'◉',LED_RGB:'◉',PHOTODIODE:'↙',
  BUZZER:'♫',PIEZO:'♫',SPEAKER:'◀',LAMP:'⊗',MOTOR:'Ⓜ',RELAY:'◫',FUSE:'─',SW_ANALOG:'╱',PUSH:'⎍',SW_SPDT:'⤴',SW_DIP:'╱',VOLTMETER:'Ⓥ',AMMETER:'Ⓐ',OHMMETER:'Ω',OSCILLOSCOPE:'〰',HALL:'H',MIC:'🎙',NPN:'N',PNP:'P',NMOS:'N',PMOS:'P',SCR:'S',TRIAC:'T',OPAMP:'△',REG_7805:'5V',TIMER_555:'555',IC_7400:'7400',IC_7404:'7404',COUNTER_4017:'4017',SEVEN_SEG:'8',ANTENNA:'⋔',PUSH_PULL:'⇄'};
@@ -32,15 +49,65 @@
  function add(type,x,y,label,st=0){const n={id:makeId(),type,x,y,label:label||labels[type],state:st,props:defaultProps(type)};nodes.push(n);return n;}
  function wire(from,to,input){wires.push({id:makeWireId(),from:from.id,to:to.id,input});}
  function demo(){
-  nodes=[];wires=[];seq=100;
+  nodes=[];wires=[];seq=100;logicMemory={registers:{}};
+  if(workspace==='electronics'){
+    // Simple real resistive loop in an independent electrical workspace.
+    const src=add('VDC',160,300,'Fuente 9V'),r=add('RESISTOR',420,180,'Resistencia 1k'),gnd=add('GND',720,300,'Referencia');
+    src.props.voltage=9;
+    wires.push({id:makeWireId(),from:src.id,fromPin:1,to:r.id,toPin:0,input:0});
+    wires.push({id:makeWireId(),from:r.id,fromPin:1,to:gnd.id,toPin:0,input:0});
+    wires.push({id:makeWireId(),from:gnd.id,fromPin:1,to:src.id,toPin:0,input:0});
+    scopeId=r.id;selected=null;pendingWire=null;pendingInput=null;trace.length=0;fitCircuit();persist();refresh();showMessage('Circuito electrónico de ejemplo: 9 V y resistencia');return;
+  }
   const a=add('SWITCH',175,175,'Entrada A',1),b=add('SWITCH',175,315,'Entrada B',1),and=add('AND',465,235,'AND'),led=add('LED',765,235,'LED / Y');
   const clock=add('CLOCK',175,495,'CLK'),not=add('NOT',465,495,'NOT'),led2=add('LED',765,495,'LED / Q');
   wire(a,and,0);wire(b,and,1);wire(and,led,0);wire(clock,not,0);wire(not,led2,0);
   selected=null;pendingWire=null;pendingInput=null;scopeId=led.id;fitCircuit();trace.length=0;persist();refresh();showMessage('Ejemplo listo: toca A, B o el reloj');
  }
  function snapshot(){history.push(JSON.stringify({nodes,wires}));if(history.length>35)history.shift();}
- function undo(){if(!history.length){showMessage('Nada que deshacer');return;}const p=JSON.parse(history.pop());nodes=p.nodes;wires=p.wires;seq=Math.max(seq,...nodes.map(n=>parseInt(n.id.replace(/\D/g,''))||0),...wires.map(w=>parseInt(w.id.replace(/\D/g,''))||0));selected=null;pendingWire=null;pendingInput=null;persist();refresh();}
- function persist(){try{localStorage.setItem('digital-flow-autosave',JSON.stringify({format:'digital-flow-v1',nodes,wires}));}catch(_){}}
+ function undo(){if(!history.length){showMessage('Nada que deshacer');return;}const p=JSON.parse(history.pop());nodes=p.nodes;wires=p.wires;logicMemory={registers:{}};seq=Math.max(seq,...nodes.map(n=>parseInt(n.id.replace(/\D/g,''))||0),...wires.map(w=>parseInt(w.id.replace(/\D/g,''))||0));selected=null;pendingWire=null;pendingInput=null;persist();refresh();}
+ function persist(){try{localStorage.setItem('patinos-v09-'+workspace,JSON.stringify({format:'digital-flow-v1',nodes,wires}));localStorage.setItem('patinos-v09-last-workspace',workspace);}catch(_){}}
+ function saveSpace(){spaces[workspace]={nodes,wires,history,view,logicMemory};}
+ function switchWorkspace(target,save=true){
+  if(!['logic','electronics'].includes(target)||(workspace===target&&save))return;
+  if(save){persist();saveSpace();}workspace=target;
+  const next=spaces[target];nodes=next.nodes;wires=next.wires;history=next.history;
+  view=next.view||{x:0,y:0,w:1160,h:650};logicMemory=next.logicMemory||{registers:{}};
+  analogState={readings:new Map(),warnings:[],state:null,fault:false};lastState={outs:new Map(),stable:true,conflict:false};
+  seq=Math.max(seq,...nodes.map(n=>Number(n.id.replace(/\D/g,''))||0),...wires.map(w=>Number(w.id.replace(/\D/g,''))||0));
+  pendingWire=null;pendingPort=null;pendingInput=null;mousePreview=null;selected=null;
+  lastWireMarkup=null;scopeId=nodes.find(n=>n.type==='LED'||n.type==='OUT')?.id||nodes[0]?.id||null;
+  trace.length=0;importFeedback('');$('toolSearch').value='';$('toolCategory').value='all';
+  $('workspaceTitle').textContent=target==='logic'?'Editor de lógica digital':'Editor de circuitos electrónicos';
+  $('spiceBtn').hidden=target==='logic';
+  for(const id of ['logicModeBtn','electronicsModeBtn']){
+   const el=$(id),active=el.dataset.workspace===target;el.classList.toggle('active',active);el.setAttribute('aria-pressed',String(active));
+  }
+  for(const option of $('toolCategory').options){option.hidden=option.value!=='all'&&!(target==='logic'?logicCategories:electronicsCategories).includes(option.value);}
+  drawTools();if(nodes.length)fitCircuit();refresh();persist();
+ }
+ function partitionProject(project){
+   const logicNodes=project.nodes.filter(n=>TYPES[n.type].domain!=='analog');
+   const electronicsNodes=project.nodes.filter(n=>TYPES[n.type].domain==='analog');
+   const slice=(list)=>{const allowed=new Set(list.map(n=>n.id));return {nodes:list,wires:project.wires.filter(w=>allowed.has(w.from)&&allowed.has(w.to)),history:[],view:null,logicMemory:{registers:{}}};};
+   return {logic:slice(logicNodes),electronics:slice(electronicsNodes)};
+ }
+ function restoreWorkspaceData(){
+   const legacy=localStorage.getItem('digital-flow-autosave');
+   if(legacy&&!localStorage.getItem('patinos-v09-logic')&&!localStorage.getItem('patinos-v09-electronics')){
+    const parts=partitionProject(validateProject(JSON.parse(legacy)));
+    for(const k of ['logic','electronics']){spaces[k]=parts[k];localStorage.setItem('patinos-v09-'+k,JSON.stringify({format:'digital-flow-v1',nodes:parts[k].nodes,wires:parts[k].wires}));}
+   }
+   for(const k of ['logic','electronics']){
+    const str=localStorage.getItem('patinos-v09-'+k);
+    if(str){const valid=validateProject(JSON.parse(str));spaces[k]={...spaces[k],nodes:valid.nodes,wires:valid.wires};}
+   }
+   const last=localStorage.getItem('patinos-v09-last-workspace');
+   const target=last==='electronics'?'electronics':'logic';
+   // Force initial mode transition while the initial workspace is empty.
+   workspace=target==='logic'?'electronics':'logic';switchWorkspace(target,false);
+   if(!nodes.length&&!spaces.logic.nodes.length&&!spaces.electronics.nodes.length)demo();
+ }
  function fitCircuit(){
   if(!nodes.length)return;
   const xs=nodes.map(n=>n.x),ys=nodes.map(n=>n.y);
@@ -50,10 +117,27 @@
   view={x:(minX+maxX-width)/2,y:(minY+maxY-height)/2,w:width,h:height};
  }
  function importFeedback(text){$('importStatus').textContent=text;$('importStatus').hidden=!text;}
- function setProject(p){const v=validateProject(p);snapshot();nodes=v.nodes;wires=v.wires;seq=Math.max(seq,...nodes.map(n=>Number(n.id.replace(/\D/g,''))||0),...wires.map(w=>Number(w.id.replace(/\D/g,''))||0));pendingWire=null;pendingInput=null;selected=null;scopeId=nodes.find(n=>n.type==='LED'||n.type==='OUT')?.id||nodes[0]?.id||null;trace.length=0;fitCircuit();persist();refresh();importFeedback(p.importNote||'');showMessage('Circuito abierto: '+nodes.length+' componentes / '+wires.length+' enlaces');}
+ function setProject(p){
+   const v=validateProject(p), parts=partitionProject(v);
+   const hasLogic=parts.logic.nodes.length>0,hasElectronics=parts.electronics.nodes.length>0;
+   if(hasLogic&&hasElectronics){
+     saveSpace();spaces.logic=parts.logic;spaces.electronics=parts.electronics;
+     for(const k of ['logic','electronics'])localStorage.setItem('patinos-v09-'+k,JSON.stringify({format:'digital-flow-v1',nodes:parts[k].nodes,wires:parts[k].wires}));
+     switchWorkspace(workspace,false);
+     showMessage('Proyecto mixto separado en dos laboratorios; puedes alternar con las pestañas.');return;
+   }
+   const target=hasElectronics?'electronics':'logic';
+   if(workspace!==target)switchWorkspace(target);
+   snapshot();nodes=v.nodes;wires=v.wires;logicMemory={registers:{}};
+   seq=Math.max(seq,...nodes.map(n=>Number(n.id.replace(/\D/g,''))||0),...wires.map(w=>Number(w.id.replace(/\D/g,''))||0));
+   pendingWire=null;pendingInput=null;pendingPort=null;selected=null;
+   scopeId=nodes.find(n=>n.type==='LED'||n.type==='OUT')?.id||nodes[0]?.id||null;
+   trace.length=0;fitCircuit();persist();refresh();importFeedback(p.importNote||'');
+   showMessage('Circuito abierto: '+nodes.length+' componentes / '+wires.length+' enlaces');
+ }
  function newProject(){
-  if((nodes.length||wires.length)&&!confirm('¿Crear un proyecto nuevo? Guarda una copia del actual antes de continuar.'))return;
-  snapshot();nodes=[];wires=[];selected=null;pendingWire=null;pendingInput=null;scopeId=null;trace.length=0;
+  if((nodes.length||wires.length)&&!confirm('¿Crear un proyecto nuevo en este laboratorio? Guarda una copia antes de continuar.'))return;
+  snapshot();nodes=[];wires=[];logicMemory={registers:{}};selected=null;pendingWire=null;pendingInput=null;scopeId=null;trace.length=0;
   view={x:-80,y:-80,w:850,h:700};importFeedback('');persist();refresh();showMessage('Proyecto vacío. Añade componentes desde la barra.');
  }
  function saveSpice(){
@@ -66,7 +150,7 @@
  }
  function exportProject(){const json=JSON.stringify({format:'digital-flow-v1',nodes,wires},null,2);
   if(window.AndroidBridge){window.AndroidBridge.saveJson(json);return;}
-  const a=document.createElement('a');const url=URL.createObjectURL(new Blob([json],{type:'application/json'}));a.href=url;a.download='circuito.patinos.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);showMessage('Archivo JSON exportado');
+  const a=document.createElement('a');const url=URL.createObjectURL(new Blob([json],{type:'application/json'}));a.href=url;a.download=(workspace==='logic'?'logica':'electronica')+'.patinos.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);showMessage('Archivo JSON exportado');
  }
  function importProject(text){
   try{const source=text.trimStart();if(source.startsWith('<'))setProject(parseDig(text));else setProject(JSON.parse(text));}
@@ -86,7 +170,7 @@
  // Standard logic-gate silhouettes, a visible diode/LED, and crisp scalable SVG symbols.
  function gateShape(n){
    const x=n.x,y=n.y,t=n.type;
-   const pure=t.replace(/[34]$/,'');
+   const pure=t.replace(/[3456]$/,'');
    const neg=['NAND','NOR','XNOR'].includes(pure),base=({NAND:'AND',NOR:'OR',XNOR:'XOR'})[pure]||pure;
    const L=x-37,R=x+(neg?30:38),T=y-32,B=y+32;
    let d='';let more='';
@@ -97,8 +181,9 @@
    }
    else if(base==='NOT'||base==='BUF')d=`M ${L} ${T} L ${x+35} ${y} L ${L} ${B} Z`;
    else d=`M ${L} ${T} H ${x+35} V ${B} H ${L} Z`;
-   if(['MUX2','MAJ3','ADD_SUM','ADD_CARRY','PARITY3','EQ','IMPLIES'].includes(t)){
-     const txt=({MUX2:'MUX',MAJ3:'≥2',ADD_SUM:'Σ',ADD_CARRY:'C',PARITY3:'P',EQ:'=',IMPLIES:'⇒'})[t];
+   if(['MUX2','MAJ3','ADD_SUM','ADD_CARRY','PARITY3','EQ','IMPLIES','DFF','TFF','JKFF','SRLATCH',
+       'DEC2_0','DEC2_1','DEC2_2','DEC2_3','DEMUX0','DEMUX1','ENCODER4_B0','ENCODER4_B1'].includes(t)){
+     const txt=({MUX2:'MUX',MAJ3:'≥2',ADD_SUM:'Σ',ADD_CARRY:'C',PARITY3:'P',EQ:'=',IMPLIES:'⇒',DFF:'D▸',TFF:'T▸',JKFF:'JK▸',SRLATCH:'SR',DEC2_0:'D0',DEC2_1:'D1',DEC2_2:'D2',DEC2_3:'D3',DEMUX0:'Y0',DEMUX1:'Y1',ENCODER4_B0:'E0',ENCODER4_B1:'E1'})[t];
      return `<rect class="gate-body" x="${x-37}" y="${y-38}" width="74" height="76" rx="9"/><text class="gate-symbol" x="${x}" y="${y+7}">${txt}</text>`;
    }
    const bubble=neg||base==='NOT'?`<circle cx="${x+40}" cy="${y}" r="6.5" fill="#0b0c0d" stroke="#f5f5f5" stroke-width="2.6"/>`:'';
@@ -222,7 +307,7 @@
   $('hint').textContent=deleteMode?'Modo borrar: toca un cable o componente':pendingWire?'Arrastra o toca una entrada para conectar':pendingInput?'Toca una salida para conectar':'Arrastra terminal a terminal · Mantén presionado para propiedades';
  }
  let mousePreview=null,lastWireMarkup=null;
- function refresh(){lastState=simulate(nodes,wires,clockState,performance.now());analogState=simulateSpice(nodes,wires,performance.now()/1000,analogState.state);render();refreshScopeSelect();drawScope();
+ function refresh(){lastState=simulate(nodes,wires,clockState,performance.now(),logicMemory);logicMemory=lastState.state;analogState=simulateSpice(nodes,wires,performance.now()/1000,analogState.state);render();refreshScopeSelect();drawScope();
   if(!lastState.stable)showMessage('Oscilación detectada: ciclo sin estabilizar');refreshAnalogStatus();
  }
  function refreshAnalogStatus(){const e=$('analogStatus');if(!e)return;
@@ -257,7 +342,9 @@
      if(input.type==='number'&&(!input.value.trim()||!input.validity.valid)){showMessage('Corrige el valor de '+input.parentElement.querySelector('span').textContent);input.focus();return;}
      raw[input.dataset.property]=input.tagName==='SELECT'?input.value==='true':Number(input.value);
    }
-   snapshot();node.label=label;node.props=cleanProps(node.type,raw);persist();refresh();$('propsDialog').close();showMessage('✓ Propiedades guardadas');
+   snapshot();node.label=label;node.props=cleanProps(node.type,raw);
+   if(['DFF','TFF','JKFF','SRLATCH'].includes(node.type))delete logicMemory.registers[node.id];
+   persist();refresh();$('propsDialog').close();showMessage('✓ Propiedades guardadas');
  });
  $('propsClose').onclick=()=>$('propsDialog').close();
  $('editBtn').onclick=()=>{const node=nodes.find(n=>n.id===selected);if(node)openProps(node);else showMessage('Selecciona un componente y toca Editar');};
@@ -296,6 +383,7 @@
     if(!candidate||dist>candidate.dist)candidate={x,y,dist};
   }if(candidate&&!('dist' in candidate))break;}
   const at=candidate||{x:view.x+view.w*.5,y:view.y+view.h*.5};
+  if((TYPES[type].domain==='analog')!==(workspace==='electronics')){showMessage('Esta pieza pertenece al otro laboratorio');return;}
   snapshot();const n=add(type,at.x,at.y);selected=n.id;persist();refresh();showMessage(`${labels[type]} añadido · arrástralo para moverlo`);
  }
  function sparks(x,y,reason){
@@ -449,13 +537,15 @@
  board.addEventListener('dblclick',e=>{const node=e.target.closest('[data-kind="node"]');if(node)openProps(nodes.find(n=>n.id===node.dataset.node));});
  board.addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY>0?1.12:.88);},{passive:false});
  function drawTools(){const query=$('toolSearch').value.toLocaleLowerCase('es').trim(),cat=$('toolCategory').value;
-  const types=(cat==='all'?buttonTypes:categories[cat]).filter(t=>(labels[t]+' '+t).toLocaleLowerCase('es').includes(query));
+  const allowed=new Set((workspace==='logic'?logicCategories:electronicsCategories).flatMap(c=>categories[c]));
+  const types=(cat==='all'?buttonTypes:(categories[cat]||[])).filter(t=>allowed.has(t)).filter(t=>(labels[t]+' '+t).toLocaleLowerCase('es').includes(query));
   $('tools').innerHTML=types.length?types.map(t=>{const kind=TYPES[t].domain==='analog'?((SUPPORTED.has(t)||MULTI.has(t))?'Física':'Esquema'):'Lógica';return `<button class="tool" data-type="${t}" title="Añadir ${labels[t]} · ${kind}"><span class="glyph">${symbols[t]}</span><span>${labels[t]}</span><small class="model-type ${kind==='Esquema'?'pending':''}">${kind}</small></button>`;}).join(''):'<span class="empty-tools">Sin resultados</span>';
  }
+ $('logicModeBtn').onclick=()=>switchWorkspace('logic');$('electronicsModeBtn').onclick=()=>switchWorkspace('electronics');
  $('toolSearch').oninput=drawTools;$('toolCategory').onchange=drawTools;drawTools();
  $('tools').addEventListener('click',e=>{const t=e.target.closest('[data-type]');if(t)addTool(t.dataset.type);});
  $('newBtn').onclick=newProject;$('sampleBtn').onclick=()=>{snapshot();importFeedback('');demo();};$('undoBtn').onclick=undo;
- $('clearBtn').onclick=()=>{if(!confirm('¿Borrar todos los componentes?'))return;snapshot();nodes=[];wires=[];scopeId=null;pendingWire=null;pendingInput=null;trace.length=0;persist();refresh();};
+ $('clearBtn').onclick=()=>{if(!confirm('¿Borrar todos los componentes de este laboratorio?'))return;snapshot();nodes=[];wires=[];logicMemory={registers:{}};scopeId=null;pendingWire=null;pendingInput=null;trace.length=0;persist();refresh();};
  $('deleteModeBtn').onclick=()=>{deleteMode=!deleteMode;$('deleteModeBtn').classList.toggle('on',deleteMode);pendingWire=null;pendingInput=null;refresh();};
  $('zoomInBtn').onclick=()=>zoom(.8);$('zoomOutBtn').onclick=()=>zoom(1.25);$('zoomResetBtn').onclick=()=>{fitCircuit();render();};
  $('runBtn').onclick=updateRun;$('saveBtn').onclick=exportProject;$('spiceBtn').onclick=saveSpice;
@@ -466,7 +556,7 @@
  setInterval(()=>{
   if(!running)return;
   const now=performance.now();if(now-clockTime>=500){clockState=1-clockState;clockTime=now;}
-  const nextState=simulate(nodes,wires,clockState,now);const nextAnalog=simulateSpice(nodes,wires,now/1000,analogState.state);const currentFingerprint=JSON.stringify([...nextAnalog.readings.values()].map(r=>[r.active,Math.round((r.current||0)*10000),Math.round((r.voltage||0)*1000)]));const priorFingerprint=JSON.stringify([...analogState.readings.values()].map(r=>[r.active,Math.round((r.current||0)*10000),Math.round((r.voltage||0)*1000)]));analogState=nextAnalog;
+  const nextState=simulate(nodes,wires,clockState,now,logicMemory);logicMemory=nextState.state;const nextAnalog=simulateSpice(nodes,wires,now/1000,analogState.state);const currentFingerprint=JSON.stringify([...nextAnalog.readings.values()].map(r=>[r.active,Math.round((r.current||0)*10000),Math.round((r.voltage||0)*1000)]));const priorFingerprint=JSON.stringify([...analogState.readings.values()].map(r=>[r.active,Math.round((r.current||0)*10000),Math.round((r.voltage||0)*1000)]));analogState=nextAnalog;
   const changed=nodes.some(n=>nextState.outs.get(n.id)!==lastState.outs.get(n.id));lastState=nextState;
   trace.push(TYPES[nodes.find(n=>n.id===scopeId)?.type]?.domain==='analog'?(analogState.readings.get(scopeId)?.voltage??null):(lastState.outs.get(scopeId)??null));if(trace.length>120)trace.shift();
   if((changed||currentFingerprint!==priorFingerprint)&&!gesture)render();drawScope();refreshAnalogStatus();
@@ -476,6 +566,6 @@
     if(n)sparks(n.x,n.y,'Circuito sin estabilizar: revisa la realimentación');
   }
  },90);
- try {let raw=localStorage.getItem('digital-flow-autosave');if(raw){const p=validateProject(JSON.parse(raw));nodes=p.nodes;wires=p.wires;seq=Math.max(100,...nodes.map(n=>parseInt(n.id.replace(/\D/g,''))||0),...wires.map(w=>parseInt(w.id.replace(/\D/g,''))||0));scopeId=nodes.find(n=>n.type==='LED')?.id||nodes[0]?.id||null;fitCircuit();refresh();}else demo();}
- catch(_){demo();}
+ try{restoreWorkspaceData();}catch(err){console.warn('No se pudo restaurar',err);workspace='logic';spaces.logic={nodes:[],wires:[],history:[],view:null};demo();}
+ 
 })();

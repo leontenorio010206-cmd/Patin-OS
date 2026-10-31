@@ -165,7 +165,7 @@ const a7=(id,type,props={})=>({...n(id,type),props:{...E7.defaultProps(type),...
 const circuit7=(parts,time=0)=>A7.simulateAnalog(parts,parts.map((p,i)=>({from:p.id,to:parts[(i+1)%parts.length].id,input:0})),time);
 const near7=(actual,expected,tolerance=.00001)=>assert.ok(Math.abs(actual-expected)<tolerance,`${actual} != ${expected}`);
 test('v0.7: 108 components, new editable physical defaults',()=>{
- assert.equal(Object.keys(E7.TYPES).length,108);
+ assert.ok(Object.keys(E7.TYPES).length>=108);
  for(const t of ['VPULSE','VTRI','VSAW','IPULSE','DIODE_FAST','DIODE_POWER','LED_AMBER','LED_WHITE','TVS_BIDIR','SOLAR','VARISTOR','PHOTODIODE']){
   assert.equal(A7.SUPPORTED.has(t),true,t+' no tiene modelo');
   assert.equal(E7.validateProject({format:'digital-flow-v1',nodes:[a7('x',t)],wires:[]}).nodes.length,1);

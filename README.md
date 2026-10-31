@@ -1,23 +1,39 @@
-# Patiñ Os v0.8 Alpha — circuito lógico y simulador eléctrico Android
+# Patiñ Os — v0.9.0 Alpha
 
-## Qué está implementado
-- Interfaz negra/blanca y cableado táctil. Componentes lógicos y catálogo analógico.
-- NPN/PNP (B,C,E), NMOS/PMOS (G,D,S) y amplificador operacional (+, −, OUT) con **tres terminales independientes**. Las conexiones analógicas admiten derivaciones a un mismo terminal.
-- **SPICE-lite**: cálculo de punto de operación DC mediante análisis nodal modificado y linealización iterativa de modelos educativos de BJT, MOSFET y operacional. Los circuitos analógicos sin dispositivos de varios terminales siguen usando el motor RC/RL de v0.7.
-- Botón **SPICE**: exporta un netlist `.cir` básico compatible con ngspice; avisa de elementos no soportados. En Android usa el selector nativo para guardar.
-- Conexiones antiguas compatibles (`fromPin=1` y `toPin=0` si no están declarados).
-- Optimización de ejecución: caché para circuitos DC sin cambios, render SVG sin reconstruir cables idénticos. Optimización del APK: R8 y reducción de recursos de compilación debug; no se agregan binarios nativos.
+Patiñ Os es un simulador didáctico Android/WebView para **lógica digital y electrónica**. Proyecto libre (GPL-3.0); no es un port oficial de Digital ni una implementación completa de SPICE.
 
-## Límites explícitos
-**No es ngspice embebido y no es simulación SPICE completa.** Los modelos BJT/MOSFET son aproximaciones DC sin física térmica detallada, modelos BSIM ni capacitancias internas. El operacional usa un riel virtual de saturación, no terminales de alimentación reales. En redes con transistores, los capacitores y bobinas se representan por sus límites DC: no se modelan transitorios acoplados en esta versión. Transformadores, relés mecánicos e integrados complejos no están simulados. El archivo `.cir` se puede validar con una instalación externa de ngspice, pero sus modelos no garantizan la misma solución numérica que el simulador interno.
+## Dos laboratorios independientes
 
-## Cómo usar
-1. Añade fuente DC, tierra, resistencias y un NPN/NMOS desde la categoría semiconductores.
-2. Toca/arrastra terminales coloreados (B/C/E o G/D/S). Los mismos terminales aceptan varias conexiones.
-3. Mantén pulsado cada componente para modificar propiedades. Usa `SPICE` para guardar un `.cir`.
-4. Para una prueba reproducible, abre `ejemplo_NMOS_DC.patinos.json` desde el menú Abrir.
+**Lógica digital:** compuertas AND, OR, XOR, NAND, NOR, XNOR de 2 a 6 entradas, NOT, BUF, fuentes lógicas, reloj, indicadores, sumadores, mux, demux, codificador de prioridad y decodificador 2→4 (cada salida como componente independiente). También: DFF, TFF, JKFF y latch SR con salida Q y memoria por proyecto.
+
+**Electrónica:** catálogo de fuentes DC/AC, pasivos, semiconductores, instrumentos y actuadores; mantiene el motor educativo MNA/SPICE-lite de v0.8. Los componentes sin modelo físico siguen marcados **Esquema**, nunca se simulan como si estuvieran validados.
+
+Se cambia de laboratorio desde las pestañas superiores sin mezclar cableados. Cada uno conserva por separado su proyecto, historial de deshacer, vista y autoguardado en el almacenamiento local. Los archivos `.patinos.json` antiguos siguen abriendo; si traen ambos tipos, se reparten entre pestañas. El proyecto antiguo se migra al primer arranque sin eliminar su copia previa de almacenamiento.
+
+## Correcciones reales
+
+- XNOR de 3/4 entradas antes devolvía sin señal incorrectamente; corregido para 3, 4, 5 y 6 entradas.
+- Las propiedades **SOLAR** y **VARISTOR** ya no son sobrescritas accidentalmente por declaraciones duplicadas.
+- Biestables activados en flanco de subida; el estado lógico se mantiene entre ciclos, no entre proyectos distintos. En el SR con S=R=1 se marca estado inválido.
+- La pestaña de circuitos es la única que ofrece exportar `.cir`. Los archivos JSON se exportan por laboratorio.
+
+## Límites
+
+Los decodificadores y codificadores tienen una salida por pieza porque el editor lógico actual tiene **una salida por componente**. El encoder utiliza prioridad D3 > D2 > D1 > D0, sin salida de validez. Los flip-flops incluyen Q pero no Q negada, reset asíncrono ni retardos físicos. No se modelan metastabilidad, retardo de propagación ni voltajes de compuertas.
+
+SPICE-lite sigue utilizando modelos aproximados DC/transitorios de v0.8, no ngspice nativo ni modelos de fabricante; algunas piezas electrónicas son sólo de esquema.
 
 ## Pruebas
-`node tests/engine.test.cjs` y `node tests/spice.test.cjs`. Prueba visual/táctil de navegador: `python tests/v08_browser.py` (requiere Playwright + Chromium).
 
-GPL-3.0. Aplicación experimental no oficial; **no sirve para certificar hardware ni seguridad eléctrica**.
+```sh
+node tests/engine.test.cjs
+node tests/spice.test.cjs
+node tests/v09.test.cjs
+python tests/v09_browser.py
+```
+
+La prueba móvil usa Playwright/Chromium con contenido local inyectado, porque no siempre se permite navegar en los entornos de prueba.
+
+Android: compilación automática de `:app:assembleDebug` con GitHub Actions; APK publicado como prerelease `v0.9-alpha`.
+
+**Uso educativo:** no utilizar resultados de simulación para certificar seguridad eléctrica.

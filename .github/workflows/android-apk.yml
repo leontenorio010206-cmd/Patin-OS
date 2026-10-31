@@ -38,6 +38,7 @@ jobs:
         run: |
           node tests/engine.test.cjs
           node tests/spice.test.cjs
+          node tests/v09.test.cjs
       - name: Compilar APK
         run: gradle --no-daemon :app:assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
@@ -51,15 +52,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          TAG="v0.8-alpha"
+          TAG="v0.9-alpha"
           APK="app/build/outputs/apk/debug/app-debug.apk"
-          cp "$APK" Patin-OS-v0.8-alpha-debug.apk
+          cp "$APK" Patin-OS-v0.9-alpha-debug.apk
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" Patin-OS-v0.8-alpha-debug.apk --clobber
+            gh release upload "$TAG" Patin-OS-v0.9-alpha-debug.apk --clobber
           else
-            gh release create "$TAG" Patin-OS-v0.8-alpha-debug.apk \
+            gh release create "$TAG" Patin-OS-v0.9-alpha-debug.apk \
               --target "$GITHUB_SHA" \
-              --title "Patiñ Os v0.8 Alpha (APK Android)" \
-              --notes "Alpha con soporte 3 terminales, simulación SPICE-lite y exportación netlist .cir." \
+              --title "Patiñ Os v0.9 Alpha (APK Android)" \
+              --notes "Alpha con laboratorios separados, compuertas 5/6, biestables y decodificadores." \
               --prerelease
           fi

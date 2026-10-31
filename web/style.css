@@ -74,3 +74,10 @@ svg{shape-rendering:geometricPrecision;text-rendering:geometricPrecision}
 .tool .model-type{font-size:9px;letter-spacing:.045em;color:#42ef93;text-transform:uppercase;line-height:1.2;white-space:nowrap;font-weight:600}
 .tool .model-type.pending{color:#e6c185}
 @media(max-width:630px){.tool .model-type{font-size:8px}.tool{min-height:108px}}
+
+/* v0.9: independently saved logic and electronics workspaces */
+.workspace-tabs{display:flex;gap:7px;padding:7px 14px;background:#0d0e0f;border-bottom:1px solid #3c3d40;flex:none}
+.workspace-tab{border:1px solid #3c4143;background:#151719;color:#b6babd;border-radius:9px;min-height:45px;padding:7px 14px;font-weight:750;text-align:left;flex:1;display:flex;align-items:center;gap:10px;justify-content:center;font-size:13px}
+.workspace-tab small{font-weight:500;color:#91999c;font-size:10px}.workspace-tab.active{border-color:#59ed92;background:#14271c;color:#eafdf1}.workspace-tab.active small{color:#a2ddbc}
+.workspace-tab:focus-visible{outline:2px solid #7af6ad;outline-offset:2px}
+@media(max-width:630px){.workspace-tabs{gap:6px;padding:5px 9px}.workspace-tab{font-size:11px;min-height:39px;padding:5px 8px;gap:4px}.workspace-tab small{display:none}}
