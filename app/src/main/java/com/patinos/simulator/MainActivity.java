@@ -160,6 +160,7 @@ public class MainActivity extends Activity {
     @Override protected void onDestroy() {
         if (web != null) {
             web.evaluateJavascript("window.PatinosPauseAudio && window.PatinosPauseAudio()", null);
+            web.removeJavascriptInterface("AndroidBridge");
             web.destroy();web=null;
         }
         super.onDestroy();
@@ -168,5 +169,4 @@ public class MainActivity extends Activity {
     private void toastJs(String message) {
         web.evaluateJavascript("window.showMessage(" + JSONObject.quote(message) + ")", null);
     }
-    @Override protected void onDestroy() { if (web != null) { web.removeJavascriptInterface("AndroidBridge"); web.destroy(); } super.onDestroy(); }
 }
